@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.routers import users
+from src.routers import customers
 
 app = FastAPI()
 
@@ -15,10 +15,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(users.router)
+app.include_router(customers.router)
 
 
 @app.get("/", tags=["root"])
 async def read_root() -> dict:
-    print("??")
     return {"message": "Welcome to your todo list."}
