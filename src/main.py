@@ -1,13 +1,12 @@
 import logging
-
+import sys
+from contextlib import asynccontextmanager
+from src.config import setting
+from src.db import sessionmanager
+from fastapi import FastAPI
 import uvicorn
 
-from db import connect
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG if setting.log_level == "DEBUG" else logging.INFO)
 
 def start():
     try:
@@ -15,8 +14,6 @@ def start():
     except uvicorn.Error as error:
         logging.critical(f"An unhandled uvicorn error occurred: {error}")
 
-
-print("connect", connect)
 
 if __name__ == "__main__":
     start()

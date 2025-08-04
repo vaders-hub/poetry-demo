@@ -1,44 +1,66 @@
-import logging
+import contextlib
+from typing import Any, AsyncIterator
 
-import oracledb
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
-
-import config
-
-pool = oracledb.create_pool(
-    user=config.username,
-    password=config.password,
-    host=config.host,
-    port=config.port,
-    service_name=config.service_name,
-    min=1,
-    max=4,
-    increment=1,
+from src.config import setting
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
 )
+from sqlalchemy.orm import DeclarativeBase
 
-engine = create_engine("oracle+oracledb://", creator=pool.acquire, poolclass=NullPool)
-SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
-Base = declarative_base()
+class Base(DeclarativeBase):
+    # https://docs.sqlalchemy.org/en/14/orm/extensions/asyncio.html#preventing-implicit-io-when-using-asyncsession
+    __mapper_args__ = {"eager_defaults": True}
+
+class DatabaseSessionManager:
+    def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
+        self._engine = create_async_engine(host, **engine_kwargs)
+        self._sessionmaker = async_sessionmaker(autocommit=False, bind=self._engine, expire_on_commit=False)
+        print("DatabaseSessionManager ::::::::::::::::::::::::::::::::: ", host)
+        print("DatabaseSessionManager ::::::::::::::::::::::::::::::::: ", self._sessionmaker)
+        print("DatabaseSessionManager ::::::::::::::::::::::::::::::::: ", self._engine)
+
+    async def close(self):
+        if self._engine is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+        await self._engine.dispose()
+
+        self._engine = None
+        self._sessionmaker = None
+
+    @contextlib.asynccontextmanager
+    async def connect(self) -> AsyncIterator[AsyncConnection]:
+        if self._engine is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+        print("connect ::::::::::::::::::::::::::::::::: ", self._engine)
+
+        async with self._engine.begin() as connection:
+            try:
+                yield connection
+            except Exception:
+                await connection.rollback()
+                raise
+
+    @contextlib.asynccontextmanager
+    async def session(self) -> AsyncIterator[AsyncSession]:
+        if self._sessionmaker is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+
+        session = self._sessionmaker()
+        print("session ::::::::::::::::::::::::::::::::: ", session)
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 
-def connect():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+sessionmanager = DatabaseSessionManager(setting.database_url, {"echo": setting.echo_sql})
 
-
-# def connect() -> oracledb.Connection:
-#     try:
-#         connection = oracledb.connect(
-#             user=config.username, password=config.password, dsn=config.dsn
-#         )
-#         logging.info("Successfully connected to the Oracle database.")
-#         return connection
-#     except oracledb.Error as e:
-#         logging.error(f"Failed to connect to the database: {e}")
-#         raise
+async def connect():
+    async with sessionmanager.session() as session:
+        yield session
