@@ -1,24 +1,33 @@
+from typing import List
+
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
-from src.models.customer import Customer
-from src.schemas.customer_schema import CustomerSchema
-from src.db import connect
-from src.utils.response_wrapper import api_response
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from src.dependencies.core import DBSessionDep
+from src.crud.customer import get_customer, get_customers
+from src.schemas.customer import Customer
 
-router = APIRouter(prefix="/customers", tags=["customers"])
+router = APIRouter(
+    prefix="/customers",
+    tags=["customers"],
+    responses={404: {"description": "Not found"}},
+)
 
+@router.get(
+    "/",
+    response_model=List[Customer],
+)
+async def get_customers(
+    db_session: DBSessionDep,
+):
+    customers = await get_customers(db_session)
+    return customers
 
-@router.get("/")
-async def get_customers(db: AsyncSession = Depends(connect)):
-    try:
-        stmt = select(Customer)
-        result = await db.execute(stmt)
-        customers = result.scalars().all()
-
-        return api_response(data=customers, message="All customers retrieved")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@router.get(
+    "/{customer_id}",
+    response_model=Customer,
+)
+async def get_customer(
+    customer_id: int,
+    db_session: DBSessionDep,
+):
+    customer = await get_customer(db_session, customer_id)
+    return customer
