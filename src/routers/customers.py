@@ -15,7 +15,7 @@ router = APIRouter(
     "/",
     response_model=List[Customer],
 )
-async def get_customers(
+async def customer_list(
     db_session: DBSessionDep,
 ):
     customers = await get_customers(db_session)
@@ -25,7 +25,7 @@ async def get_customers(
     "/{customer_id}",
     response_model=Customer,
 )
-async def get_customer(
+async def customer_single(
     customer_id: int,
     db_session: DBSessionDep,
 ):
