@@ -18,9 +18,6 @@ class DatabaseSessionManager:
     def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
         self._engine = create_async_engine(host, **engine_kwargs)
         self._sessionmaker = async_sessionmaker(autocommit=False, bind=self._engine, expire_on_commit=False)
-        print("DatabaseSessionManager ::::::::::::::::::::::::::::::::: ", host)
-        print("DatabaseSessionManager ::::::::::::::::::::::::::::::::: ", self._sessionmaker)
-        print("DatabaseSessionManager ::::::::::::::::::::::::::::::::: ", self._engine)
 
     async def close(self):
         if self._engine is None:
@@ -34,7 +31,6 @@ class DatabaseSessionManager:
     async def connect(self) -> AsyncIterator[AsyncConnection]:
         if self._engine is None:
             raise Exception("DatabaseSessionManager is not initialized")
-        print("connect ::::::::::::::::::::::::::::::::: ", self._engine)
 
         async with self._engine.begin() as connection:
             try:
@@ -49,7 +45,6 @@ class DatabaseSessionManager:
             raise Exception("DatabaseSessionManager is not initialized")
 
         session = self._sessionmaker()
-        print("session ::::::::::::::::::::::::::::::::: ", session)
         try:
             yield session
         except Exception:

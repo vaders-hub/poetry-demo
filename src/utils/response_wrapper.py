@@ -1,4 +1,8 @@
-def api_response(data=None, message="Success", status=True, error=None):
+from typing import TypeVar, Generic
+
+T = TypeVar('T')
+
+def api_response(data=Generic[T], message="Success", status=True, error=None):
     return {
         "status": status,
         "message": message,

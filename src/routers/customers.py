@@ -1,9 +1,19 @@
-from typing import List
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Response
+from fastapi.responses import ORJSONResponse
+import orjson
+
 from src.dependencies.core import DBSessionDep
 from src.crud.customer import get_customer, get_customers
-from src.schemas.customer import Customer
+from src.schemas.customer import CustomerResponseData
+from src.utils.response_wrapper import api_response
+
+class CustomORJSONResponse(Response):
+    media_type = "application/json"
+
+    def render(self, content: Any) -> bytes:
+        return orjson.dumps(content)
 
 router = APIRouter(
     prefix="/customers",
@@ -13,21 +23,28 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[Customer],
+    response_model=CustomerResponseData
 )
 async def customer_list(
     db_session: DBSessionDep,
 ):
-    customers = await get_customers(db_session)
-    return customers
+    try:
+        customers = await get_customers(db_session)
+        return api_response(data=customers, message="customer retrieved")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @router.get(
     "/{customer_id}",
-    response_model=Customer,
+    response_model=CustomerResponseData,
 )
 async def customer_single(
     customer_id: int,
     db_session: DBSessionDep,
 ):
     customer = await get_customer(db_session, customer_id)
-    return customer
+    return api_response(data=customer, message="customer retrieved")
