@@ -9,7 +9,8 @@ async def get_customers(db_session: AsyncSession):
     customers = result.scalars().all()
 
     if not customers:
-        raise HTTPException(status_code=404, detail="Users not found")
+        raise HTTPException(status_code=404, detail="Customers not found")
+
     return customers
 
 async def get_customer(db_session: AsyncSession, customer_id: int):
@@ -19,5 +20,25 @@ async def get_customer(db_session: AsyncSession, customer_id: int):
     customer = result.scalars(stmt).first()
 
     if not customer:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    return customer
+
+async def create_customer(db_session: AsyncSession, customer: CustomerDBModel):
+    cid = customer.customer_id
+
+    if not cid:
+        raise HTTPException(status_code=500, detail="Customer ID required")
+
+    stmt = select(CustomerDBModel).where(CustomerDBModel.customer_id == cid)
+    result = await db_session.execute(stmt)
+    customer_exist = result.scalars().first()
+
+    if not customer_exist:
+        new_user = CustomerDBModel(customer_id=cid)
+        db_session.add(new_user)
+        await db_session.commit()
+    else:
+        raise HTTPException(status_code=500, detail="Customer already exists")
+
     return customer
