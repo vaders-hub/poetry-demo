@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Response
 import orjson
 
 from src.dependencies.core import DBSessionDep
-from src.crud.customer import get_customer, get_customers, create_customer
+from src.crud.customer import get_customer, get_customers, create_customer, update_customer, delete_customer
 from src.schemas.customer import Customer, CustomerResponseData
 from src.utils.response_wrapper import api_response
 
@@ -56,4 +56,26 @@ async def add_customer(
     db_session: DBSessionDep,
 ):
     customer = await create_customer(db_session, customer)
-    return api_response(data=customer, message="customer retrieved")
+    return api_response(data=customer, message="customer created")
+
+@router.put(
+    "/modify",
+    response_model=CustomerResponseData,
+)
+async def update_customer(
+    customer: Customer,
+    db_session: DBSessionDep,
+):
+    customer = await update_customer(db_session, customer)
+    return api_response(data=customer, message="customer modified")
+
+@router.delete(
+    "/delete",
+    response_model=CustomerResponseData,
+)
+async def remove_customer(
+    customer: Customer,
+    db_session: DBSessionDep,
+):
+    customer = await delete_customer(db_session, customer)
+    return api_response(data=customer, message="customer modified")
