@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     project_name: str = "My FastAPI project"
     oauth_token_secret: str = "my_dev_secret"
     log_level: str = "DEBUG"
+
 setting = Settings() # type: ignore
 
 # Database Credentials
