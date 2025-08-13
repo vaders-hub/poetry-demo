@@ -5,6 +5,7 @@ from src.db import sessionmanager
 
 from src.routers import customers
 from src.routers import users
+from src.routers import llm
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,6 +32,7 @@ app.add_middleware(
 
 app.include_router(customers.router)
 app.include_router(users.router)
+app.include_router(llm.router)
 
 
 @app.get("/", tags=["root"])
