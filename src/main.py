@@ -1,21 +1,20 @@
-import logging
-from logging.config import dictConfig
 import sys
-from src.config import setting
+import logging
+
 import uvicorn
 from uvicorn.config import LOGGING_CONFIG
-from langchain_community.llms import OpenAI
+
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.chains import LLMChain
-from dotenv import load_dotenv
+from langchain_teddynote import logging as lchn_logging
+
+from src.config import setting
 
 log_config = uvicorn.config.LOGGING_CONFIG
 LOGGING_CONFIG["formatters"]["access"]["fmt"] = "%(asctime)s - Uvicorn.Access - %(levelname)s - %(message)s"
 LOGGING_CONFIG["formatters"]["default"]["fmt"] = "%(asctime)s - Uvicorn.Default - %(levelname)s - %(message)s"
-
-load_dotenv()
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -23,10 +22,11 @@ logging.basicConfig(
     level=logging.DEBUG if setting.log_level == "DEBUG" else logging.INFO,
     # handlers=[logging.StreamHandler()]
 )
+lchn_logging.langsmith("vaders")
 
 llm = ChatOpenAI(
-    temperature=0,
-    model_name="gpt-4o-mini"
+    temperature=setting.temperature,
+    model_name=setting.model_name
 )
 
 template = "아래 질문에 대한 답변을 해주세요. \n{query}"
