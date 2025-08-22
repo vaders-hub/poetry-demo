@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from src.main import client, llm, chain
@@ -21,11 +22,18 @@ async def async_chat(query: Query):
     return response
 
 @router.get("/async/chat-stream")
-async def async_chat(query: Query):
-    answer = llm.stream("대한민국의 아름다운 관광지 10곳과 주소를 알려주세요!")
-    for token in answer:
-        response = token.content
-    return response
+async def async_chat(query: str):
+    def event_generator():
+        with client.chat.completions.stream(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": query}],
+        ) as stream:
+            for event in stream:
+                if event.type == "content.delta":
+                    yield event.delta
+            yield "[END]"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.get("/async/generate-text")
 async def async_chat(query: str):
