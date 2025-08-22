@@ -4,11 +4,11 @@ import logging
 import uvicorn
 from uvicorn.config import LOGGING_CONFIG
 
+from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.chains import LLMChain
-from langchain_teddynote import logging as lchn_logging
 
 from src.config import setting
 
@@ -22,8 +22,8 @@ logging.basicConfig(
     level=logging.DEBUG if setting.log_level == "DEBUG" else logging.INFO,
     # handlers=[logging.StreamHandler()]
 )
-lchn_logging.langsmith("vaders")
 
+client = OpenAI()
 llm = ChatOpenAI(
     temperature=setting.temperature,
     model_name=setting.model_name
