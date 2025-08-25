@@ -9,6 +9,8 @@ host = "localhost"
 port = "1521"
 service_name = "freepdb1"
 
+load_dotenv()
+
 class Settings(BaseSettings):
     database_url: str = "oracle+oracledb://ot:oracle@localhost:1521/?service_name=freepdb1"
     echo_sql: bool = True
@@ -18,8 +20,9 @@ class Settings(BaseSettings):
     log_level: str = "DEBUG"
     temperature: int = 0
     model_name: str = "gpt-4o-mini"
+    openai_api_key: str = os.getenv("OPENAI_API_KEY")
 
-load_dotenv()
 setting = Settings() # type: ignore
 
-# Database Credentials
+if not setting.openai_api_key:
+    raise ValueError("OPENAI_API_KEY not found in environment variables")

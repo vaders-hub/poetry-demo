@@ -5,7 +5,8 @@ import uvicorn
 from uvicorn.config import LOGGING_CONFIG
 
 from openai import OpenAI
-from langchain_openai import ChatOpenAI
+
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.chains import LLMChain
@@ -32,6 +33,9 @@ llm = ChatOpenAI(
 template = "아래 질문에 대한 답변을 해주세요. \n{query}"
 prompt = PromptTemplate.from_template(template=template)
 chain = prompt | llm | StrOutputParser()
+embeddings = OpenAIEmbeddings(openai_api_key=setting.openai_api_key)
+
+rag_chain = None
 
 def start():
     try:
