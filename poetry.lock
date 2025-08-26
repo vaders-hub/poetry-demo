@@ -1509,6 +1509,7 @@ files = [
 [package.dependencies]
 async-timeout = {version = ">=4.0.0,<5.0.0", markers = "python_version < \"3.11\""}
 langchain-core = ">=0.3.72,<1.0.0"
+langchain-openai = {version = "*", optional = true, markers = "extra == \"openai\""}
 langchain-text-splitters = ">=0.3.9,<1.0.0"
 langsmith = ">=0.1.17"
 pydantic = ">=2.7.4,<3.0.0"
@@ -5052,4 +5053,4 @@ cffi = ["cffi (>=1.17) ; python_version >= \"3.13\" and platform_python_implemen
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.15,>=3.9"
-content-hash = "62732739dd2ea5a422579179ac2070bb95dddb731526a0373f8d37f193ec226f"
+content-hash = "f89cdfd0658f499d7f03eed7fe724ec09a9150bc445c1f81bda68ff711291cb4"

@@ -6,10 +6,14 @@ from uvicorn.config import LOGGING_CONFIG
 
 from openai import OpenAI
 
+import faiss
+
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.chains import LLMChain
+from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_community.vectorstores import FAISS
 
 from src.config import setting
 
@@ -33,7 +37,17 @@ llm = ChatOpenAI(
 template = "아래 질문에 대한 답변을 해주세요. \n{query}"
 prompt = PromptTemplate.from_template(template=template)
 chain = prompt | llm | StrOutputParser()
+
 embeddings = OpenAIEmbeddings(openai_api_key=setting.openai_api_key)
+embedding_dim = len(embeddings.embed_query("hello world"))
+index = faiss.IndexFlatL2(embedding_dim)
+
+vector_store = FAISS(
+    embedding_function=embeddings,
+    index=index,
+    docstore=InMemoryDocstore(),
+    index_to_docstore_id={},
+)
 
 rag_chain = None
 
