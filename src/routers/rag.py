@@ -17,6 +17,7 @@ from langchain_core.documents import Document
 
 from typing_extensions import List, TypedDict
 
+from src.utils.response_wrapper import api_response
 from src.main import chain
 from src.main import vector_store
 
@@ -98,10 +99,12 @@ class State(TypedDict):
     answer: str
 
 @router.post("/web-retrieve")
-async def process_url(state: State):
+async def process_url(url_input: URLInput):
+    state: State = State()
     try:
         loader = WebBaseLoader(
-            web_paths=("https://lilianweng.github.io/posts/2023-06-23-agent/",),
+            # "https://lilianweng.github.io/posts/2023-06-23-agent/"
+            web_paths=(url_input.url,),
             bs_kwargs=dict(
                 parse_only=bs4.SoupStrainer(
                     class_=("post-content", "post-title", "post-header")
@@ -116,8 +119,9 @@ async def process_url(state: State):
 
         prompt = hub.pull("rlm/rag-prompt")
 
-        retrieved_docs = vector_store.similarity_search(state["question"])
-        return {"context": retrieved_docs}
+        retrieved_docs = vector_store.similarity_search('Class')
+
+        return api_response(data=retrieved_docs, message="web documents retrieved")
 
     except Exception as e:
         error_trace = traceback.format_exc()
