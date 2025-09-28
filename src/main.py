@@ -13,11 +13,13 @@ logging.basicConfig(
     # handlers=[logging.StreamHandler()]
 )
 
+
 def start():
     try:
         uvicorn.run("src.router:app", host="0.0.0.0", port=8001, reload=True)
     except uvicorn.Error as error:
         logging.critical(f"An unhandled uvicorn error occurred: {error}")
+
 
 if __name__ == "__main__":
     start()

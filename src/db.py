@@ -10,9 +10,11 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
+
 class Base(DeclarativeBase):
     # https://docs.sqlalchemy.org/en/14/orm/extensions/asyncio.html#preventing-implicit-io-when-using-asyncsession
     __mapper_args__ = {"eager_defaults": True}
+
 
 class DatabaseSessionManager:
     def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
@@ -55,6 +57,7 @@ class DatabaseSessionManager:
 
 
 sessionmanager = DatabaseSessionManager(setting.database_url, {"echo": setting.echo_sql})
+
 
 async def connect():
     async with sessionmanager.session() as session:

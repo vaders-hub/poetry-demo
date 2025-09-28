@@ -1,4 +1,4 @@
-from typing import Optional, Required
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 from src.schemas.api_response import APIRESPONSE
