@@ -17,9 +17,9 @@ async def lifespan(app: FastAPI):
         # Close the DB connection
         await sessionmanager.close()
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, root_path="/api/v1")
 
-origins = ["http://localhost:5173", "localhost:5173"]
+origins = ["http://localhost", "http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,
