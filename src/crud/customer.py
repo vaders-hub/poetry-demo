@@ -19,8 +19,6 @@ async def get_customers(db_session: AsyncSession):
 async def get_customer(db_session: AsyncSession, customer_id: int):
     stmt = select(CustomerDBModel).where(CustomerDBModel.customer_id == customer_id)
     result = await db_session.execute(stmt)
-
-    # customer = result.scalars(stmt).first()
     customer = result.scalars().first()
 
     if not customer:
