@@ -10,9 +10,7 @@ service_name = "freepdb1"
 
 
 class Settings(BaseSettings):
-    database_url: str = (
-        "oracle+oracledb://ot:oracle@localhost:1521/?service_name=freepdb1"
-    )
+    database_url: str = "oracle+oracledb://ot:oracle@localhost:1521/?service_name=freepdb1"
     echo_sql: bool = True
     test: bool = False
     project_name: str = "My FastAPI project"

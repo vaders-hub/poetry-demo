@@ -20,9 +20,7 @@ async def lifespan(app: FastAPI):
         await sessionmanager.close()
 
 
-app = FastAPI(
-    lifespan=lifespan, root_path="/api/v1", dependencies=[Depends(verify_token)]
-)
+app = FastAPI(lifespan=lifespan, root_path="/api/v1", dependencies=[Depends(verify_token)])
 
 origins = ["http://localhost", "http://localhost:3000"]
 

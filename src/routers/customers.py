@@ -3,8 +3,13 @@ from typing import Any
 import orjson
 from fastapi import APIRouter, HTTPException, Response
 
-from src.crud.customer import (create_customer, delete_customer, get_customer,
-                               get_customers, update_customer)
+from src.crud.customer import (
+    create_customer,
+    delete_customer,
+    get_customer,
+    get_customers,
+    update_customer,
+)
 from src.dependencies.core import DBSessionDep
 from src.schemas.customer import Customer, CustomerResponseData
 from src.utils.response_wrapper import api_response
