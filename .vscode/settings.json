@@ -63,19 +63,21 @@
       "source.organizeImports": "explicit"
     }
   },
-  "black-formatter.args": [
-    "--line-length",
-    "100"
-  ],
-  "flake8.enabled": true,
-  "flake8.args": [
-      "--extend-ignore=E203,W503",
-      "--max-line-length=88"
-  ],
-  "isort.args": [
-      "--profile", 
-      "black"
-  ]
+  {
+    "flake8.args": [
+      "--config-toml",
+      "./pyproject.toml"
+    ]
+  }
+  // "flake8.enabled": true,
+  // "flake8.args": [
+  //     "--extend-ignore=E203,W503",
+  //     "--max-line-length=100"
+  // ],
+  // "isort.args": [
+  //     "--profile", 
+  //     "black"
+  // ],
   "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
   "python.analysis.typeCheckingMode": "standard",
   "javascript.format.enable": true,
