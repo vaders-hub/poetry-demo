@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from src.db import sessionmanager
 
-from src.routers import customers
-from src.routers import users
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from dependencies.auth import verify_token
+from src.db import sessionmanager
+from src.routers import customers, users
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,7 +19,10 @@ async def lifespan(app: FastAPI):
         # Close the DB connection
         await sessionmanager.close()
 
-app = FastAPI(lifespan=lifespan, root_path="/api/v1")
+
+app = FastAPI(
+    lifespan=lifespan, root_path="/api/v1", dependencies=[Depends(verify_token)]
+)
 
 origins = ["http://localhost", "http://localhost:3000"]
 

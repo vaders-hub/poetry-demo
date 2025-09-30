@@ -1,14 +1,11 @@
 import contextlib
 from typing import Any, AsyncIterator
 
-from src.config import setting
-from sqlalchemy.ext.asyncio import (
-    AsyncConnection,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import (AsyncConnection, AsyncSession,
+                                    async_sessionmaker, create_async_engine)
 from sqlalchemy.orm import DeclarativeBase
+
+from src.config import setting
 
 
 class Base(DeclarativeBase):
@@ -19,7 +16,9 @@ class Base(DeclarativeBase):
 class DatabaseSessionManager:
     def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
         self._engine = create_async_engine(host, **engine_kwargs)
-        self._sessionmaker = async_sessionmaker(autocommit=False, bind=self._engine, expire_on_commit=False)
+        self._sessionmaker = async_sessionmaker(
+            autocommit=False, bind=self._engine, expire_on_commit=False
+        )
 
     async def close(self):
         if self._engine is None:
@@ -56,7 +55,9 @@ class DatabaseSessionManager:
             await session.close()
 
 
-sessionmanager = DatabaseSessionManager(setting.database_url, {"echo": setting.echo_sql})
+sessionmanager = DatabaseSessionManager(
+    setting.database_url, {"echo": setting.echo_sql}
+)
 
 
 async def connect():

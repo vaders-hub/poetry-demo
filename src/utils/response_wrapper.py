@@ -1,6 +1,7 @@
-from typing import TypeVar, Generic
+from typing import Generic, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 def api_response(data=Generic[T], message="Success", status=True, error=None):
     return {

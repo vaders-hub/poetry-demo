@@ -1,14 +1,16 @@
 import logging
 import sys
 from contextlib import asynccontextmanager
+
+import uvicorn
+from fastapi import FastAPI
+
 from src.config import setting
 from src.db import sessionmanager
-from fastapi import FastAPI
-import uvicorn
 
 logging.basicConfig(
     stream=sys.stdout,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.DEBUG if setting.log_level == "DEBUG" else logging.INFO,
     # handlers=[logging.StreamHandler()]
 )
