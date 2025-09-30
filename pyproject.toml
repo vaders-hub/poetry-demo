@@ -27,18 +27,6 @@ python-jose = {extras = ["cryptography"], version = "^3.5.0"}
 [tool.poetry]
 packages = [{include = "poetry_demo", from = "src"}]
 
-exclude = [
-    ".git",
-    "__pycache__",
-    "venv",
-    ".venv",
-    "venv/",
-    "build",
-    "dist",
-    "tests/",
-    "docs/",
-]
-
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.2.0"
 black = "^25.1.0"
@@ -46,10 +34,30 @@ pydantic-settings = "^2.10.1"
 flake8 = "^7.3.0"
 isort = "^6.0.1"
 
-[tool.flake8]
-max-line-length = 100
+[tool.black]
+line-length = 100
+target-version = ['py310']
 
-ignore = ["E203", "W503", "E501"] 
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+
+[tool.flake8]
+max-line-length = 88
+# Black과 충돌하는 규칙 무시
+extend-ignore = "E203,W503"
+exclude = [
+    ".git",
+    "__pycache__",
+    "venv",
+    ".venv",
+    "build",
+    "dist"
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
