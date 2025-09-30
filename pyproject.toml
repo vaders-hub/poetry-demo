@@ -22,13 +22,12 @@ asyncpg = ">=0.30.0,<0.31.0"
 orjson = ">=3.11.1,<4.0.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 python-jose = {extras = ["cryptography"], version = "^3.5.0"}
-pre-commit = "^4.3.0"
 
 [tool.poetry]
 packages = [{include = "poetry_demo", from = "src"}]
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = "^4.2.0"
+pre-commit = "^4.3.0"
 black = "^25.1.0"
 pydantic-settings = "^2.10.1"
 flake8 = "^7.3.0"
