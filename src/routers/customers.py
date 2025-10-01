@@ -3,16 +3,18 @@ from typing import Any
 import orjson
 from fastapi import APIRouter, HTTPException, Response
 
-from src.crud.customer import (
+from crud.customer import (
     create_customer,
     delete_customer,
     get_customer,
     get_customers,
     update_customer,
 )
-from src.dependencies.core import DBSessionDep
-from src.schemas.customer import Customer, CustomerResponseData
-from src.utils.response_wrapper import api_response
+from dependencies.core import DBSessionDep
+from models import Customer as CustomerModel
+from schemas.customer import Customer as CustomerSchema
+from schemas.customer import CustomerResponseData
+from utils.response_wrapper import api_response
 
 
 class CustomORJSONResponse(Response):
@@ -30,7 +32,7 @@ router = APIRouter(
 
 
 @router.get("/list", response_model=CustomerResponseData)
-async def customer_list(
+async def customers(
     db_session: DBSessionDep,
 ):
     try:
@@ -46,36 +48,41 @@ async def customer_list(
     "/{customer_id}",
     response_model=CustomerResponseData,
 )
-async def customer_single(
+async def customer(
     customer_id: int,
     db_session: DBSessionDep,
 ):
     customer = await get_customer(db_session, customer_id)
+
     return api_response(data=customer, message="customer retrieved")
 
 
 @router.post(
     "/add",
-    response_model=CustomerResponseData,
+    # response_model=CustomerResponseData,
 )
-async def add_customer(
-    customer: Customer,
+async def add(
+    customer: CustomerSchema,
     db_session: DBSessionDep,
 ):
-    customer = await create_customer(db_session, customer)
-    return api_response(data=customer, message="customer created")
+    customer_model_instance = CustomerModel(**customer.model_dump())
+    result = await create_customer(db_session, customer_model_instance)
+
+    return api_response(data=result, message="customer created")
 
 
 @router.put(
     "/modify",
     response_model=CustomerResponseData,
 )
-async def update_customer(
-    customer: Customer,
+async def update(
+    customer: CustomerSchema,
     db_session: DBSessionDep,
 ):
-    customer = await update_customer(db_session, customer)
-    return api_response(data=customer, message="customer modified")
+    customer_model_instance = CustomerModel(**customer.model_dump())
+    result = await update_customer(db_session, customer_model_instance)
+
+    return api_response(data=result, message="customer modified")
 
 
 @router.delete(
@@ -83,8 +90,10 @@ async def update_customer(
     response_model=CustomerResponseData,
 )
 async def remove_customer(
-    customer: Customer,
+    customer: CustomerSchema,
     db_session: DBSessionDep,
 ):
-    customer = await delete_customer(db_session, customer)
-    return api_response(data=customer, message="customer modified")
+    customer_model_instance = CustomerModel(**customer.model_dump())
+    result = await delete_customer(db_session, customer_model_instance)
+
+    return api_response(data=result, message="customer modified")

@@ -2,9 +2,7 @@
 name = "poetry-demo"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "hyunbae.jeon",email = "mazingazz@gmail.com"}
-]
+authors = [{ name = "hyunbae.jeon", email = "mazingazz@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
 
@@ -22,21 +20,28 @@ asyncpg = ">=0.30.0,<0.31.0"
 orjson = ">=3.11.1,<4.0.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 python-jose = {extras = ["cryptography"], version = "^3.5.0"}
+python-multipart = "^0.0.20"
 
 [tool.poetry]
 packages = [{include = "poetry_demo", from = "src"}]
+
+[tool.poetry.scripts]
+start = 'src.main:start'
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.3.0"
 black = "^25.1.0"
 pydantic-settings = "^2.10.1"
-flake8 = "^7.3.0"
 isort = "^6.0.1"
 flake8-pyproject = "^1.2.3"
+loguru = "^0.7.3"
+mypy = "^1.18.2"
+flake8 = "^7.3.0"
 
 [tool.black]
 line-length = 100
-target-version = ['py310']
+target-version = ["py310"]
+skip-string-normalization = false
 
 [tool.isort]
 profile = "black"
@@ -47,20 +52,10 @@ force_grid_wrap = 0
 use_parentheses = true
 
 [tool.flake8]
-max-line-length = 100
-extend-ignore = "E203,W503"
-exclude = [
-    ".git",
-    "__pycache__",
-    "venv",
-    ".venv",
-    "build",
-    "dist"
-]
+max-line-length = 120
+extend-ignore = ["E203", "W503", "F401", "E501"]
+exclude = [".git", "__pycache__", "build", "dist", "venv", ".mypy_cache"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-start = 'src.main:start'

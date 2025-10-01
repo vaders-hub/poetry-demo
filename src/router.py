@@ -3,9 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from db import sessionmanager
 from dependencies.auth import verify_token
-from src.db import sessionmanager
-from src.routers import customers, users
+from routers import customers, users
 
 
 @asynccontextmanager

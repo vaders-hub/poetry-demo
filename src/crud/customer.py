@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models import Customer as CustomerDBModel
+from models import Customer as CustomerDBModel
 
 
 async def get_customers(db_session: AsyncSession):
@@ -27,7 +27,7 @@ async def get_customer(db_session: AsyncSession, customer_id: int):
     return customer
 
 
-async def create_customer(db_session: AsyncSession, customer: CustomerDBModel):
+async def create_customer(db_session: AsyncSession, customer: CustomerDBModel) -> CustomerDBModel:
     cid = customer.customer_id
     cname = customer.name
 
@@ -41,7 +41,9 @@ async def create_customer(db_session: AsyncSession, customer: CustomerDBModel):
     if not customer_exist:
         new_user = CustomerDBModel(customer_id=cid)
         db_session.add(new_user)
+
         await db_session.commit()
+        await db_session.refresh(customer)
     else:
         raise HTTPException(status_code=500, detail="Customer already exists")
 

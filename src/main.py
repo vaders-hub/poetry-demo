@@ -1,27 +1,24 @@
-import logging
-import sys
-from contextlib import asynccontextmanager
-
 import uvicorn
-from fastapi import FastAPI
+from loguru import logger
 
-from src.config import setting
-from src.db import sessionmanager
+# from configs.log_config import setup_logging
 
-logging.basicConfig(
-    stream=sys.stdout,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.DEBUG if setting.log_level == "DEBUG" else logging.INFO,
-    # handlers=[logging.StreamHandler()]
-)
+# setup_logging()
 
 
 def start():
     try:
-        uvicorn.run("src.router:app", host="0.0.0.0", port=8001, reload=True)
-    except uvicorn.Error as error:
-        logging.critical(f"An unhandled uvicorn error occurred: {error}")
+        logger.info("🚀 FastAPI Application Started")
 
-
-if __name__ == "__main__":
-    start()
+        uvicorn.run(
+            "src.router:app",
+            host="0.0.0.0",
+            port=8001,
+            log_config="src/configs/logging.yaml",
+            reload=True,
+        )
+    except Exception as e:
+        # Log the error and its traceback
+        logger.error("An unexpected Uvicorn/ASGI server error occurred.", exc_info=True)
+        logger.error(e)
+        # You can inspect the type of 'e' here if needed: type(e).__name__
