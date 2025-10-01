@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 
 from jose import jwt
+from loguru import logger
 from passlib.context import CryptContext
+from passlib.hash import bcrypt
 
 SECRET_KEY = "supersecret"
 ALGORITHM = "HS256"
@@ -11,7 +13,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    try:
+        safe_password = password.encode("utf-8")[:72]
+
+        return bcrypt.hash(safe_password)
+
+    except ValueError as e:
+        logger.error(e)
+        raise e
 
 
 def verify_password(plain: str, hashed: str) -> bool:
