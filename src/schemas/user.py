@@ -1,3 +1,6 @@
+from typing import Optional
+
+from fastapi import Depends, File, Form, UploadFile
 from pydantic import BaseModel, field_validator
 
 
@@ -14,6 +17,10 @@ class UserCreate(BaseModel):
         if len(v.encode("utf-8")) > 72:
             raise ValueError("Password cannot exceed 72 bytes")
         return v
+
+
+def user_info_form(username: str = Form(...), password: str = Form(...)) -> UserCreate:
+    return UserCreate(username=username, password=password)
 
 
 class UserLogin(BaseModel):
