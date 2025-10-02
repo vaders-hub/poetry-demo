@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from db import sessionmanager
 from dependencies.auth import verify_token
 from routers import customers, users
+from utils.response_wrapper import api_response
 
 
 @asynccontextmanager
@@ -34,6 +36,15 @@ app.add_middleware(
 
 app.include_router(customers.router)
 app.include_router(users.router)
+
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+
+    return api_response(
+        status_code=exc.status_code,
+        data={"data": "", "message": exc.detail},
+    )
 
 
 @app.get("/", tags=["root"])

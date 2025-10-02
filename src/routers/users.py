@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Form, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
 from crud.user import create_user, get_user_by_username
 from dependencies.core import DBSessionDep
 from schemas.user import Token, UserCreate, user_info_form
 from utils import security
+from utils.response_wrapper import api_response
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -14,15 +15,17 @@ async def register(
     db_session: DBSessionDep,
     user: UserCreate = Depends(user_info_form),
 ):
+    if len(user.password) > 72:
+        raise HTTPException(status_code=400, detail="password too long")
+
     db_user = await get_user_by_username(db_session, user.username)
 
     if db_user:
         raise HTTPException(status_code=400, detail="Username already exists")
 
     new_user = await create_user(db_session, user.username, user.password)
-    access_token = security.create_access_token({"sub": new_user.username})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return api_response(data=new_user, message="user created")
 
 
 @router.post("/login", response_model=Token)

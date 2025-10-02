@@ -8,16 +8,6 @@ class UserCreate(BaseModel):
     username: str
     password: str
 
-    @field_validator("password")
-    def password_max_72_bytes(cls, v: str) -> str:
-        """
-        bcrypt는 최대 72바이트 제한이 있으므로,
-        입력 비밀번호가 이를 초과하면 ValueError 발생
-        """
-        if len(v.encode("utf-8")) > 72:
-            raise ValueError("Password cannot exceed 72 bytes")
-        return v
-
 
 def user_info_form(username: str = Form(...), password: str = Form(...)) -> UserCreate:
     return UserCreate(username=username, password=password)
