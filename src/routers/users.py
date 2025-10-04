@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from crud.user import create_user, get_user_by_username
 from dependencies.core import DBSessionDep
-from schemas.user import Token, UserCreate, user_info_form
+from schemas.user import Token, UserCreate, user_info_form, UserResult
 from utils import security
 from utils.response_wrapper import api_response
 
@@ -24,8 +24,10 @@ async def register(
         raise HTTPException(status_code=400, detail="Username already exists")
 
     new_user = await create_user(db_session, user.username, user.password)
+    user_result = UserResult.model_validate(new_user)
 
-    return api_response(data=new_user, message="user created")
+    return api_response(data=user_result, message="user created")
+
 
 
 @router.post("/login", response_model=Token)

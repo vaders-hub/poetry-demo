@@ -1,7 +1,7 @@
 from typing import Optional
 
 from fastapi import Depends, File, Form, UploadFile
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict
 
 
 class UserCreate(BaseModel):
@@ -11,6 +11,13 @@ class UserCreate(BaseModel):
 
 def user_info_form(username: str = Form(...), password: str = Form(...)) -> UserCreate:
     return UserCreate(username=username, password=password)
+
+class UserResult(BaseModel):
+    id: int
+    username: str
+    hashed_password: str
+
+    model_config = {"from_attributes": True}
 
 
 class UserLogin(BaseModel):
