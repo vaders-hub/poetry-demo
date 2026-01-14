@@ -1,3 +1,4 @@
-from src.db import Base
+from db import Base
 
 from .customer import Customer
+from .user import User

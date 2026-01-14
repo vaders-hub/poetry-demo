@@ -1,0 +1,143 @@
+{
+  "terminal.integrated.fontFamily": "NanumGothicCoding",
+  "js/ts.implicitProjectConfig.experimentalDecorators": true,
+  "js/ts.implicitProjectConfig.checkJs": true,
+  "vetur.experimental.templateInterpolationService": true,
+  "editor.tabSize": 2,
+  "editor.fontFamily": "NanumGothicCoding, Consolas, 'Courier New', monospace",
+  "editor.suggestSelection": "first",
+  "editor.fontLigatures": false,
+  "editor.cursorBlinking": "smooth",
+  "editor.indentSize": 2,
+  "eslint.alwaysShowStatus": true,
+  "editor.formatOnPaste": true,
+  "editor.fontSize": 12,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "never"
+  },
+  "html.format.enable": true,
+  "htmlhint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[json]": {
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "editor.suggest.insertMode": "replace",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+ "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[tsx]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports.ruff": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "python.formatting.provider": "black",
+  "python.sortImports.args": ["--profile", "black"],
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.typeCheckingMode": "basic"
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+  },
+  "flake8.args": [
+    "--extend-ignore=F401,E203,E501,W503",
+    "--config-toml",
+    "./pyproject.toml"
+  ],
+  "flake8.enabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.linting.flake8Args": ["--config=pyproject.toml"],
+  "python.linting.ignorePatterns": ["E*", "W*"],  // 특정 코드 무시 가능
+  "python.linting.flake8CategorySeverity": {
+    "E": "Warning",
+    "W": "Warning",
+    "F": "Warning"
+  },
+  "python.analysis.typeCheckingMode": "basic",
+  "isort.args": [
+      "--profile", 
+      "black"
+  ],
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.analysis.typeCheckingMode": "standard",
+  "mypy.runUsingActiveInterpreter": true,
+  "mypy.dmypyExecutable": "dmypy",
+  "javascript.format.enable": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "git.enableSmartCommit": true,
+  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+
+  "files.trimFinalNewlines": true,
+  "terminal.integrated.defaultProfile.windows": "Git Bash",
+  "settingsSync.ignoredExtensions": [
+  ],
+  "workbench.editor.highlightModifiedTabs": true,
+  "workbench.startupEditor": "none",
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "workbench.settings.applyToAllProfiles": [
+  
+
+  
+  ],
+  "extensions.ignoreRecommendations": true,
+  "workbench.settings.openDefaultKeybindings": true,
+  "workbench.sideBar.location": "right",
+  "workbench.colorCustomizations": {
+      "editor.lineHighlightBackground": "#000000ff",
+      "editor.lineHighlightBorder": "#aaaaaa00",   
+      // "editor.findMatchBackground": "#007700",
+      "editor.findMatchBorder": "#b8ffb8",
+      "editor.findMatchHighlightBackground": "#003300",
+      "editor.findMatchHighlightBorder": "#007733",
+      // "editor.selectionBackground": "#b8ffb8",
+      "editor.wordHighlightBorder": "#b8e4ff",
+      "editorBracketMatch.border": "#ffea00",
+      "editorCursor.foreground": "#ffea00",
+      "editor.selectionForeground": "#fdfeff",
+      "editor.selectionBackground": "#00ccff",
+      "terminal.background": "#001535",
+      "terminalCursor.background":"#D0D0D0",
+      "terminalCursor.foreground":"#D0D0D0",
+  },
+  "diffEditor.wordWrap": "off",
+  "workbench.settings.openDefaultSettings": true,
+  "files.associations": {
+    "*.tsx": "typescriptreact"
+  },
+  "settingsSync.ignoredSettings": [],
+  "gitlens.ai.vscode.model": "",
+  "terminal.integrated.fontSize": 12,
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.cursorStyle": "line",
+}
