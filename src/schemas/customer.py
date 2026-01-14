@@ -1,16 +1,12 @@
-from typing import Annotated, Optional, Required
+from typing import Optional
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict
 from src.schemas.api_response import APIRESPONSE
 
-def is_null(value: int) -> int:
-    if value is None:
-        raise ValueError(f'{value} is null')
-    return value
 
 class Customer(BaseModel):
-    customer_id: Annotated[int, AfterValidator(is_null)]
-    name: Optional[str] = None
+    customer_id: str
+    name: str
     address: Optional[str] = None
     website: Optional[str] = None
     credit_limit: Optional[int] = None

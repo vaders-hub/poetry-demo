@@ -13,11 +13,11 @@ async def get_customers(db_session: AsyncSession):
 
     return customers
 
-async def get_customer(db_session: AsyncSession, customer_id: int):
+async def get_customer(db_session: AsyncSession, customer_id: str):
     stmt = select(CustomerDBModel).where(CustomerDBModel.customer_id == customer_id)
     result = await db_session.execute(stmt)
 
-    customer = result.scalars(stmt).first()
+    customer = result.scalars().first()
 
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -28,28 +28,35 @@ async def create_customer(db_session: AsyncSession, customer: CustomerDBModel):
     cid = customer.customer_id
     cname = customer.name
 
-    if not cid or cname:
-        raise HTTPException(status_code=500, detail="Customer ID required")
+    if not cid or not cname:
+        raise HTTPException(status_code=400, detail="Customer ID and name are required")
 
     stmt = select(CustomerDBModel).where(CustomerDBModel.customer_id == cid)
     result = await db_session.execute(stmt)
     customer_exist = result.scalars().first()
 
     if not customer_exist:
-        new_user = CustomerDBModel(customer_id=cid)
+        new_user = CustomerDBModel(
+            customer_id=cid,
+            name=cname,
+            address=customer.address,
+            website=customer.website,
+            credit_limit=customer.credit_limit
+        )
         db_session.add(new_user)
         await db_session.commit()
+        await db_session.refresh(new_user)
+        return new_user
     else:
-        raise HTTPException(status_code=500, detail="Customer already exists")
+        raise HTTPException(status_code=409, detail="Customer already exists")
 
-    return customer
 
 async def update_customer(db_session: AsyncSession, customer: CustomerDBModel):
     cid = customer.customer_id
     cname = customer.name
 
-    if not cid or cname:
-        raise HTTPException(status_code=500, detail="Customer ID required")
+    if not cid or not cname:
+        raise HTTPException(status_code=400, detail="Customer ID and name are required")
 
     stmt = select(CustomerDBModel).where(CustomerDBModel.customer_id == cid)
 
@@ -57,19 +64,21 @@ async def update_customer(db_session: AsyncSession, customer: CustomerDBModel):
     customer_exist = result.scalars().first()
 
     if customer_exist:
-        merge_user = CustomerDBModel(customer_id=cid)
-        db_session.merge(merge_user)
+        customer_exist.name = cname
+        customer_exist.address = customer.address
+        customer_exist.website = customer.website
+        customer_exist.credit_limit = customer.credit_limit
         await db_session.commit()
+        await db_session.refresh(customer_exist)
+        return customer_exist
     else:
-        raise HTTPException(status_code=404, detail="Customer not exists")
-
-    return customer
+        raise HTTPException(status_code=404, detail="Customer does not exist")
 
 async def delete_customer(db_session: AsyncSession, customer: CustomerDBModel):
     cid = customer.customer_id
 
     if not cid:
-        raise HTTPException(status_code=500, detail="Customer ID required")
+        raise HTTPException(status_code=400, detail="Customer ID required")
 
     stmt = select(CustomerDBModel).where(CustomerDBModel.customer_id == cid)
 
@@ -77,10 +86,8 @@ async def delete_customer(db_session: AsyncSession, customer: CustomerDBModel):
     customer_exist = result.scalars().first()
 
     if customer_exist:
-        delete_user = CustomerDBModel(customer_id=cid)
-        db_session.delete(delete_user)
+        await db_session.delete(customer_exist)
         await db_session.commit()
+        return customer_exist
     else:
-        raise HTTPException(status_code=404, detail="Customer not exists")
-
-    return customer
+        raise HTTPException(status_code=404, detail="Customer does not exist")

@@ -1,18 +1,16 @@
-from typing import Any
-
-from fastapi import APIRouter, HTTPException, Response
-import orjson
+from fastapi import APIRouter, HTTPException
 
 from src.dependencies.core import DBSessionDep
-from src.crud.customer import get_customer, get_customers, create_customer, update_customer, delete_customer
+from src.crud.customer import (
+    get_customer,
+    get_customers,
+    create_customer,
+    update_customer as update_customer_crud,
+    delete_customer as delete_customer_crud
+)
 from src.schemas.customer import Customer, CustomerResponseData
 from src.utils.response_wrapper import api_response
 
-class CustomORJSONResponse(Response):
-    media_type = "application/json"
-
-    def render(self, content: Any) -> bytes:
-        return orjson.dumps(content)
 
 router = APIRouter(
     prefix="/customer",
@@ -41,7 +39,7 @@ async def customer_list(
     response_model=CustomerResponseData,
 )
 async def customer_single(
-    customer_id: int,
+    customer_id: str,
     db_session: DBSessionDep,
 ):
     customer = await get_customer(db_session, customer_id)
@@ -66,7 +64,7 @@ async def update_customer(
     customer: Customer,
     db_session: DBSessionDep,
 ):
-    customer = await update_customer(db_session, customer)
+    customer = await update_customer_crud(db_session, customer)
     return api_response(data=customer, message="customer modified")
 
 @router.delete(
@@ -77,5 +75,5 @@ async def remove_customer(
     customer: Customer,
     db_session: DBSessionDep,
 ):
-    customer = await delete_customer(db_session, customer)
-    return api_response(data=customer, message="customer modified")
+    customer = await delete_customer_crud(db_session, customer)
+    return api_response(data=customer, message="customer deleted")

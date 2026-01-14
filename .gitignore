@@ -5,4 +5,8 @@ __pycache__
 .pytest_cache
 .vscode
 .project
+.claude
 dist
+
+# Claude temporary directories
+tmpclaude-*

@@ -5,36 +5,40 @@ import bs4
 import traceback
 
 from langchain import hub
-from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import HTMLHeaderTextSplitter, RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain import hub
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
 
-from typing_extensions import List, TypedDict
+from typing import List
+from typing_extensions import TypedDict
 
 from src.utils.response_wrapper import api_response
 from src.main import chain
-from src.main import vector_store
+from src.main import get_vector_store
 
-class Query(BaseModel):
-    prompt: str
-    min_length: int = 3
-    max_tokens: int = 50
 
 class URLInput(BaseModel):
     url: str
 
 router = APIRouter(prefix="/rag", tags=["rag"])
-embeddings_model = HuggingFaceEmbeddings(
-    model_name='jhgan/ko-sroberta-nli',
-    model_kwargs={'device':'cpu'},
-    encode_kwargs={'normalize_embeddings':True},
-)
+
+# Lazy-loaded embeddings model
+_embeddings_model = None
+
+def get_embeddings_model():
+    """Get or create HuggingFace embeddings model (lazy initialization)"""
+    global _embeddings_model
+    if _embeddings_model is None:
+        _embeddings_model = HuggingFaceEmbeddings(
+            model_name='jhgan/ko-sroberta-nli',
+            model_kwargs={'device':'cpu'},
+            encode_kwargs={'normalize_embeddings':True},
+        )
+    return _embeddings_model
 
 @router.post("/load")
 async def process_url(url_input: URLInput):
@@ -68,25 +72,15 @@ async def process_url(url_input: URLInput):
 
 
         if len(splits) > 0:
-            vectorstore = FAISS.from_documents(documents=splits, embedding=embeddings_model)
-            retriever = vectorstore.as_retriever()
-            prompt = hub.pull("rlm/rag-prompt")
-
-            def format_docs(docs):
-                return "\n\n".join(doc.page_content for doc in docs)
-
-            rag_chain = (
-                {
-                    "context": retriever | format_docs,
-                    "question": RunnablePassthrough(),
-                }
-                | prompt
-                | chain
-                | StrOutputParser()
-            )
-            return {"message": "URL processed successfully"}
+            embeddings = get_embeddings_model()
+            vectorstore = FAISS.from_documents(documents=splits, embedding=embeddings)
+            return {
+                "message": "URL processed successfully",
+                "document_count": len(splits),
+                "vectorstore_size": vectorstore.index.ntotal
+            }
         else:
-            return {"message": "URL processed failed"}
+            return {"message": "URL processing failed - no documents extracted"}
 
     except Exception as e:
         error_trace = traceback.format_exc()
@@ -115,11 +109,10 @@ async def process_url(url_input: URLInput):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         all_splits = text_splitter.split_documents(docs)
 
-        _ = vector_store.add_documents(documents=all_splits)
+        vs = get_vector_store()
+        _ = vs.add_documents(documents=all_splits)
 
-        prompt = hub.pull("rlm/rag-prompt")
-
-        retrieved_docs = vector_store.similarity_search('Class')
+        retrieved_docs = vs.similarity_search('Class')
 
         return api_response(data=retrieved_docs, message="web documents retrieved")
 

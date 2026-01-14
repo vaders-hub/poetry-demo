@@ -22,7 +22,7 @@ async def async_chat(query: Query):
     return response
 
 @router.get("/async/chat-stream")
-async def async_chat(query: str):
+async def async_chat_stream(query: str):
     def event_generator():
         with client.chat.completions.stream(
             model="gpt-4o-mini",
@@ -36,13 +36,13 @@ async def async_chat(query: str):
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.get("/async/generate-text")
-async def async_chat(query: str):
+async def async_generate_text(query: str):
     try:
-        response = client.responses.create(
+        response = await client.chat.completions.create(
             model="gpt-4o-mini",
-            input=query,
+            messages=[{"role": "user", "content": query}],
         )
-        return {"text": response.output_text}
+        return {"text": response.choices[0].message.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

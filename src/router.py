@@ -10,6 +10,8 @@ from src.routers import customers
 from src.routers import users
 from src.routers import llm
 from src.routers import rag
+from src.routers import mcp
+from src.routers import lcel_examples
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,6 +40,8 @@ app.include_router(customers.router)
 app.include_router(users.router)
 app.include_router(llm.router)
 app.include_router(rag.router)
+app.include_router(mcp.router)
+app.include_router(lcel_examples.router)
 
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
