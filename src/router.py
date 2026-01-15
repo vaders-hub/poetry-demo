@@ -15,6 +15,7 @@ from src.routers import lcel_examples
 from src.routers import llamaindex_examples
 from src.routers import document_analysis
 from src.routers import document_analysis_redis
+from src.routers import document_clause_analysis
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,6 +49,7 @@ app.include_router(lcel_examples.router)
 app.include_router(llamaindex_examples.router)
 app.include_router(document_analysis.router)
 app.include_router(document_analysis_redis.router)
+app.include_router(document_clause_analysis.router)
 
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 

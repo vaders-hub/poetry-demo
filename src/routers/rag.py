@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from datetime import datetime
 
 import bs4
 import traceback
@@ -16,7 +17,7 @@ from langchain_core.documents import Document
 from typing import List
 from typing_extensions import TypedDict
 
-from src.utils.response_wrapper import api_response
+from src.utils import success_response, error_response
 from src.main import chain
 from src.main import get_vector_store
 
@@ -42,9 +43,11 @@ def get_embeddings_model():
 
 @router.post("/load")
 async def process_url(url_input: URLInput):
+    """URL에서 문서 로드 및 벡터 스토어 생성"""
     try:
-        loader = WebBaseLoader(url_input.url)
+        start_time = datetime.now()
 
+        loader = WebBaseLoader(url_input.url)
         docs = loader.load()
 
         headers_to_split_on = [
@@ -59,33 +62,43 @@ async def process_url(url_input: URLInput):
         for element in html_header_splits[:2]:
             print('html_header_splits ::::::::::::::::::::::::::: ', element)
 
-        # for element in html_header_splits_elements[:3]:
-        #     print('html_header_splits_elements ::::::::::::::::::::::::::: ', element)
-
         chunk_size = 500
         chunk_overlap = 30
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
         splits = text_splitter.split_documents(html_header_splits)
-        # splits[80:85]
 
+        end_time = datetime.now()
 
         if len(splits) > 0:
             embeddings = get_embeddings_model()
             vectorstore = FAISS.from_documents(documents=splits, embedding=embeddings)
-            return {
-                "message": "URL processed successfully",
-                "document_count": len(splits),
-                "vectorstore_size": vectorstore.index.ntotal
-            }
+
+            return success_response(
+                data={
+                    "url": url_input.url,
+                    "document_count": len(splits),
+                    "vectorstore_size": vectorstore.index.ntotal,
+                },
+                message="URL이 성공적으로 처리되었습니다.",
+                execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+            )
         else:
-            return {"message": "URL processing failed - no documents extracted"}
+            return error_response(
+                message="URL 처리 실패 - 문서를 추출할 수 없습니다.",
+                error="NO_DOCUMENTS_EXTRACTED",
+                status_code=400,
+            )
 
     except Exception as e:
         error_trace = traceback.format_exc()
         print(f"Error in process_url: {error_trace}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="URL 처리 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 class State(TypedDict):
     question: str
@@ -93,11 +106,13 @@ class State(TypedDict):
     answer: str
 
 @router.post("/web-retrieve")
-async def process_url(url_input: URLInput):
+async def web_retrieve(url_input: URLInput):
+    """웹 문서 검색 및 유사도 검색"""
     state: State = State()
     try:
+        start_time = datetime.now()
+
         loader = WebBaseLoader(
-            # "https://lilianweng.github.io/posts/2023-06-23-agent/"
             web_paths=(url_input.url,),
             bs_kwargs=dict(
                 parse_only=bs4.SoupStrainer(
@@ -114,9 +129,32 @@ async def process_url(url_input: URLInput):
 
         retrieved_docs = vs.similarity_search('Class')
 
-        return api_response(data=retrieved_docs, message="web documents retrieved")
+        end_time = datetime.now()
+
+        return success_response(
+            data={
+                "url": url_input.url,
+                "documents": [
+                    {
+                        "page_content": doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content,
+                        "metadata": doc.metadata,
+                    }
+                    for doc in retrieved_docs
+                ],
+            },
+            message="웹 문서가 검색되었습니다.",
+            execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+            metadata={
+                "total_splits": len(all_splits),
+                "retrieved_count": len(retrieved_docs),
+            }
+        )
 
     except Exception as e:
         error_trace = traceback.format_exc()
-        print(f"Error in process_url: {error_trace}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error in web_retrieve: {error_trace}")
+        return error_response(
+            message="웹 문서 검색 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
