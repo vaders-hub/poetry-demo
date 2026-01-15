@@ -6,14 +6,11 @@ LlamaIndex 인덱스를 Redis에 저장하여 영구 보존 및 분산 환경 �
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from typing import Optional, Dict, Any
-import os
+from typing import Dict, Any
 import json
 import pickle
 import base64
 from datetime import datetime
-
-import redis.asyncio as redis
 
 from llama_index.core import VectorStoreIndex, Settings
 from llama_index.llms.openai import OpenAI
@@ -32,6 +29,9 @@ from src.utils import (
     success_response,
     created_response,
     error_response,
+    get_redis_client,
+    close_redis_client,
+    ping_redis,
 )
 
 
@@ -42,32 +42,6 @@ router = APIRouter(
 # LlamaIndex 설정
 Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
 Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
-
-# Redis 클라이언트 (전역)
-redis_client: Optional[redis.Redis] = None
-
-
-# ============================================================================
-# Redis 연결 관리
-# ============================================================================
-
-
-async def get_redis_client() -> redis.Redis:
-    """Redis 클라이언트 가져오기 (싱글톤)"""
-    global redis_client
-    if redis_client is None:
-        # .env에서 REDIS_URL 읽기, 없으면 기본값 사용
-        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        redis_client = await redis.from_url(redis_url, decode_responses=False)
-    return redis_client
-
-
-async def close_redis_client():
-    """Redis 클라이언트 종료"""
-    global redis_client
-    if redis_client:
-        await redis_client.close()
-        redis_client = None
 
 
 # ============================================================================

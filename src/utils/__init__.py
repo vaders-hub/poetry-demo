@@ -16,6 +16,11 @@ from src.utils.response_wrapper import (
     error_response,
     ResponseData,
 )
+from src.utils.redis_client import (
+    get_redis_client,
+    close_redis_client,
+    ping_redis,
+)
 
 __all__ = [
     # Document Analysis Utils
@@ -28,4 +33,8 @@ __all__ = [
     "created_response",
     "error_response",
     "ResponseData",
+    # Redis Client
+    "get_redis_client",
+    "close_redis_client",
+    "ping_redis",
 ]

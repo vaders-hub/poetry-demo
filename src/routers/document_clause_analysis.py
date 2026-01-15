@@ -10,10 +10,9 @@ import os
 import pickle
 import base64
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 from fastapi import APIRouter
-import redis.asyncio as redis
 
 from llama_index.core import VectorStoreIndex, Settings
 from llama_index.llms.openai import OpenAI
@@ -25,7 +24,12 @@ from src.models.document_analysis import (
     ExceptionClauseRequest,
     ClauseSearchRequest,
 )
-from src.utils import success_response, error_response
+from src.utils import (
+    success_response,
+    error_response,
+    get_redis_client,
+    ping_redis,
+)
 from src.utils.document_analysis import (
     load_pdf_from_path,
     create_hierarchical_index,
@@ -37,29 +41,17 @@ from src.utils.document_analysis import (
 
 
 router = APIRouter(
-    prefix="/document-clause-analysis",
-    tags=["Document Clause Analysis (Redis)"]
+    prefix="/document-clause-analysis", tags=["Document Clause Analysis (Redis)"]
 )
 
 # LlamaIndex 설정
 Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
 Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
-# Redis 클라이언트 (전역)
-redis_client: Optional[redis.Redis] = None
-
 
 # ============================================================================
-# Redis 연결 관리
+# Redis 저장/로드 헬퍼
 # ============================================================================
-
-async def get_redis_client() -> redis.Redis:
-    """Redis 클라이언트 가져오기 (싱글톤)"""
-    global redis_client
-    if redis_client is None:
-        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        redis_client = await redis.from_url(redis_url, decode_responses=False)
-    return redis_client
 
 
 async def load_index_from_redis(doc_id: str) -> tuple[VectorStoreIndex, Dict[str, Any]]:
@@ -67,7 +59,7 @@ async def load_index_from_redis(doc_id: str) -> tuple[VectorStoreIndex, Dict[str
     client = await get_redis_client()
 
     # Redis에서 데이터 가져오기
-    data = await client.hgetall(f"doc:{doc_id}")
+    data = await client.hgetall(f"doc:{doc_id}")  # type: ignore
 
     if not data:
         raise ValueError(f"문서 ID '{doc_id}'를 Redis에서 찾을 수 없습니다.")
@@ -85,7 +77,8 @@ async def load_index_from_redis(doc_id: str) -> tuple[VectorStoreIndex, Dict[str
     metadata = {}
     if metadata_json:
         import json
-        metadata = json.loads(metadata_json.decode('utf-8'))
+
+        metadata = json.loads(metadata_json.decode("utf-8"))
 
     return index, metadata
 
@@ -93,6 +86,7 @@ async def load_index_from_redis(doc_id: str) -> tuple[VectorStoreIndex, Dict[str
 # ============================================================================
 # Endpoints
 # ============================================================================
+
 
 @router.post("/upload-from-docs")
 async def upload_document_from_docs(request: DocumentUploadRequest):
@@ -125,7 +119,7 @@ async def upload_document_from_docs(request: DocumentUploadRequest):
 
         # Redis 저장
         index_bytes = pickle.dumps(index)
-        index_base64 = base64.b64encode(index_bytes).decode('utf-8')
+        index_base64 = base64.b64encode(index_bytes).decode("utf-8")
 
         metadata = {
             "doc_id": request.doc_id,
@@ -138,13 +132,14 @@ async def upload_document_from_docs(request: DocumentUploadRequest):
         }
 
         import json
+
         client = await get_redis_client()
-        await client.hset(
+        await client.hset(  # type: ignore
             f"doc:{request.doc_id}",
             mapping={
                 "index": index_base64,
-                "metadata": json.dumps(metadata, ensure_ascii=False)
-            }
+                "metadata": json.dumps(metadata, ensure_ascii=False),
+            },
         )
 
         end_time = datetime.now()
@@ -164,7 +159,7 @@ async def upload_document_from_docs(request: DocumentUploadRequest):
                 "index_type": "hierarchical",
                 "parent_chunk_size": 2048,
                 "child_chunk_size": 512,
-            }
+            },
         )
 
     except FileNotFoundError as e:
@@ -211,8 +206,7 @@ async def analyze_decision_reason(request: ReasonAnalysisRequest):
 
         # 쿼리 엔진 생성
         query_engine = index.as_query_engine(
-            similarity_top_k=request.top_k,
-            response_mode="tree_summarize"
+            similarity_top_k=request.top_k, response_mode="tree_summarize"
         )
 
         # 사유 분석 프롬프트
@@ -266,7 +260,7 @@ async def analyze_decision_reason(request: ReasonAnalysisRequest):
             metadata={
                 "analysis_type": "reason_analysis",
                 "top_k_used": request.top_k,
-            }
+            },
         )
 
     except ValueError as e:
@@ -315,8 +309,7 @@ async def find_exception_clauses(request: ExceptionClauseRequest):
 
         # 쿼리 엔진 생성
         query_engine = index.as_query_engine(
-            similarity_top_k=request.top_k,
-            response_mode="tree_summarize"
+            similarity_top_k=request.top_k, response_mode="tree_summarize"
         )
 
         # 예외 키워드
@@ -355,8 +348,7 @@ async def find_exception_clauses(request: ExceptionClauseRequest):
 
         # 예외 키워드가 포함된 소스만 하이라이팅
         highlighted_sources = highlight_exception_sources(
-            source_references,
-            exception_keywords
+            source_references, exception_keywords
         )
 
         end_time = datetime.now()
@@ -375,7 +367,7 @@ async def find_exception_clauses(request: ExceptionClauseRequest):
             metadata={
                 "analysis_type": "exception_clause_search",
                 "exception_keywords_searched": exception_keywords,
-            }
+            },
         )
 
     except ValueError as e:
@@ -422,8 +414,7 @@ async def search_specific_clause(request: ClauseSearchRequest):
 
         # 쿼리 엔진 생성
         query_engine = index.as_query_engine(
-            similarity_top_k=request.top_k,
-            response_mode="compact"
+            similarity_top_k=request.top_k, response_mode="compact"
         )
 
         # 조항 검색 프롬프트
@@ -438,7 +429,9 @@ async def search_specific_clause(request: ClauseSearchRequest):
         response = query_engine.query(query)
 
         # 소스 참조 추출
-        source_references = extract_source_references(response.source_nodes, top_n=request.top_k)
+        source_references = extract_source_references(
+            response.source_nodes, top_n=request.top_k
+        )
 
         end_time = datetime.now()
 
@@ -455,7 +448,7 @@ async def search_specific_clause(request: ClauseSearchRequest):
             metadata={
                 "analysis_type": "clause_search",
                 "top_k_used": request.top_k,
-            }
+            },
         )
 
     except ValueError as e:
@@ -479,17 +472,16 @@ async def health_check():
 
     Redis 연결 상태 확인
     """
-    try:
-        client = await get_redis_client()
-        await client.ping()
-        redis_connected = True
-    except Exception:
-        redis_connected = False
+    redis_connected = await ping_redis()
 
     return success_response(
         data={
             "status": "healthy" if redis_connected else "degraded",
             "redis_connected": redis_connected,
         },
-        message="조항 분석 API가 정상 작동 중입니다." if redis_connected else "Redis 연결 오류",
+        message=(
+            "조항 분석 API가 정상 작동 중입니다."
+            if redis_connected
+            else "Redis 연결 오류"
+        ),
     )
