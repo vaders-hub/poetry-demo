@@ -12,6 +12,9 @@ from src.routers import llm
 from src.routers import rag
 from src.routers import mcp
 from src.routers import lcel_examples
+from src.routers import llamaindex_examples
+from src.routers import document_analysis
+from src.routers import document_analysis_redis
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,6 +45,9 @@ app.include_router(llm.router)
 app.include_router(rag.router)
 app.include_router(mcp.router)
 app.include_router(lcel_examples.router)
+app.include_router(llamaindex_examples.router)
+app.include_router(document_analysis.router)
+app.include_router(document_analysis_redis.router)
 
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 

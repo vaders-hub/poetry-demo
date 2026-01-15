@@ -33,6 +33,9 @@ dependencies = [
     "python-jose[cryptography] (>=3.3.0,<4.0.0)",
     "passlib[bcrypt] (>=1.7.4,<2.0.0)",
     "loguru (>=0.7.0,<0.8.0)",
+    "llama-index (>=0.12.0,<0.13.0)",
+    "pymupdf (>=1.24.0,<2.0.0)",
+    "redis (>=5.0.0,<6.0.0)",
 ]
 
 [tool.poetry]
@@ -61,3 +64,4 @@ mcp-server = 'src.mcp_server:main'
 mcp-example = 'src.examples.mcp_client_example:main'
 async-patterns = 'src.examples.async_patterns:main'
 lcel-patterns = 'src.examples.lcel_patterns:main'
+llamaindex-patterns = 'src.examples.llamaindex_patterns:main'
