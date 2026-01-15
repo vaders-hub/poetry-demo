@@ -23,6 +23,9 @@ from src.utils import (
     load_pdf_from_path,
     create_hierarchical_index,
     stream_response,
+    success_response,
+    created_response,
+    error_response,
 )
 
 
@@ -78,20 +81,26 @@ async def upload_pdf_from_docs(request: DocumentUploadRequest):
 
         end_time = datetime.now()
 
-        return {
-            "doc_id": request.doc_id,
-            "file_name": request.file_name,
-            "num_pages": len(documents),
-            "total_nodes": total_nodes,
-            "child_nodes": child_nodes,
-            "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "message": "PDF 파일이 성공적으로 인덱싱되었습니다."
-        }
+        return created_response(
+            data={
+                "doc_id": request.doc_id,
+                "file_name": request.file_name,
+                "num_pages": len(documents),
+                "total_nodes": total_nodes,
+                "child_nodes": child_nodes,
+            },
+            message="PDF 파일이 성공적으로 인덱싱되었습니다.",
+            execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+        )
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="문서 업로드 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.post("/summary")
@@ -103,7 +112,11 @@ async def get_document_summary(request: SummaryRequest):
     """
     try:
         if request.doc_id not in _index_storage:
-            raise HTTPException(status_code=404, detail=f"문서 ID '{request.doc_id}'를 찾을 수 없습니다.")
+            return error_response(
+                message=f"문서 ID '{request.doc_id}'를 찾을 수 없습니다.",
+                error="NOT_FOUND",
+                status_code=404,
+            )
 
         start_time = datetime.now()
 
@@ -124,19 +137,25 @@ async def get_document_summary(request: SummaryRequest):
 
         end_time = datetime.now()
 
-        return {
-            "doc_id": request.doc_id,
-            "summary": str(response),
-            "summary_length": len(str(response)),
-            "source_nodes_count": len(response.source_nodes),
-            "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "문서의 목적과 핵심 내용을 요약했습니다."
-        }
+        return success_response(
+            data={
+                "doc_id": request.doc_id,
+                "summary": str(response),
+                "summary_length": len(str(response)),
+                "source_nodes_count": len(response.source_nodes),
+            },
+            message="문서의 목적과 핵심 내용을 요약했습니다.",
+            execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+        )
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="문서 요약 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.post("/summary-streaming")
@@ -185,7 +204,11 @@ async def extract_issues(request: IssueExtractionRequest):
     """
     try:
         if request.doc_id not in _index_storage:
-            raise HTTPException(status_code=404, detail=f"문서 ID '{request.doc_id}'를 찾을 수 없습니다.")
+            return error_response(
+                message=f"문서 ID '{request.doc_id}'를 찾을 수 없습니다.",
+                error="NOT_FOUND",
+                status_code=404,
+            )
 
         start_time = datetime.now()
 
@@ -220,19 +243,25 @@ async def extract_issues(request: IssueExtractionRequest):
 
         end_time = datetime.now()
 
-        return {
-            "doc_id": request.doc_id,
-            "issues": str(response),
-            "source_nodes": source_nodes_info,
-            "total_source_nodes": len(response.source_nodes),
-            "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "문서에서 주요 이슈를 추출했습니다."
-        }
+        return success_response(
+            data={
+                "doc_id": request.doc_id,
+                "issues": str(response),
+                "source_nodes": source_nodes_info,
+                "total_source_nodes": len(response.source_nodes),
+            },
+            message="문서에서 주요 이슈를 추출했습니다.",
+            execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+        )
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="이슈 추출 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.post("/query")
@@ -244,7 +273,11 @@ async def query_document(request: QueryRequest):
     """
     try:
         if request.doc_id not in _index_storage:
-            raise HTTPException(status_code=404, detail=f"문서 ID '{request.doc_id}'를 찾을 수 없습니다.")
+            return error_response(
+                message=f"문서 ID '{request.doc_id}'를 찾을 수 없습니다.",
+                error="NOT_FOUND",
+                status_code=404,
+            )
 
         start_time = datetime.now()
 
@@ -270,24 +303,31 @@ async def query_document(request: QueryRequest):
 
             end_time = datetime.now()
 
-            return {
-                "doc_id": request.doc_id,
-                "query": request.query,
-                "response": str(response),
-                "source_nodes": [
-                    {
-                        "score": node.score,
-                        "text_preview": node.node.text[:200] + "..." if len(node.node.text) > 200 else node.node.text,
-                    }
-                    for node in response.source_nodes
-                ],
-                "execution_time_ms": (end_time - start_time).total_seconds() * 1000
-            }
+            return success_response(
+                data={
+                    "doc_id": request.doc_id,
+                    "query": request.query,
+                    "response": str(response),
+                    "source_nodes": [
+                        {
+                            "score": node.score,
+                            "text_preview": node.node.text[:200] + "..." if len(node.node.text) > 200 else node.node.text,
+                        }
+                        for node in response.source_nodes
+                    ],
+                },
+                message="질의응답이 완료되었습니다.",
+                execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+            )
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="질의응답 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.get("/list-documents")
@@ -306,10 +346,13 @@ async def list_indexed_documents():
             "created_at": storage["created_at"]
         })
 
-    return {
-        "total_documents": len(documents),
-        "documents": documents
-    }
+    return success_response(
+        data=documents,
+        message="문서 목록 조회 성공",
+        metadata={
+            "total_documents": len(documents),
+        }
+    )
 
 
 @router.delete("/delete-document/{doc_id}")
@@ -318,11 +361,18 @@ async def delete_document(doc_id: str):
     인덱싱된 문서 삭제
     """
     if doc_id not in _index_storage:
-        raise HTTPException(status_code=404, detail=f"문서 ID '{doc_id}'를 찾을 수 없습니다.")
+        return error_response(
+            message=f"문서 ID '{doc_id}'를 찾을 수 없습니다.",
+            error="NOT_FOUND",
+            status_code=404,
+        )
 
     del _index_storage[doc_id]
 
-    return {
-        "message": f"문서 '{doc_id}'가 삭제되었습니다.",
-        "remaining_documents": len(_index_storage)
-    }
+    return success_response(
+        data={"doc_id": doc_id, "deleted": True},
+        message=f"문서 '{doc_id}'가 삭제되었습니다.",
+        metadata={
+            "remaining_documents": len(_index_storage),
+        }
+    )

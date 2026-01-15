@@ -29,6 +29,9 @@ from src.utils import (
     load_pdf_from_path,
     create_hierarchical_index,
     stream_response,
+    success_response,
+    created_response,
+    error_response,
 )
 
 
@@ -202,18 +205,24 @@ async def upload_pdf_from_docs(request: DocumentUploadRequest):
 
         end_time = datetime.now()
 
-        return {
-            "doc_id": request.doc_id,
-            "storage": "Redis",
-            **metadata,
-            "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "message": "PDF 파일이 Redis에 성공적으로 저장되었습니다.",
-        }
+        return created_response(
+            data={
+                "doc_id": request.doc_id,
+                "storage": "Redis",
+                **metadata,
+            },
+            message="PDF 파일이 Redis에 성공적으로 저장되었습니다.",
+            execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+        )
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="문서 업로드 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.post("/summary")
@@ -238,19 +247,30 @@ async def get_document_summary(request: SummaryRequest):
 
         end_time = datetime.now()
 
-        return {
-            "doc_id": request.doc_id,
-            "storage": "Redis",
-            "summary": str(response),
-            "summary_length": len(str(response)),
-            "source_nodes_count": len(response.source_nodes),
-            "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-        }
+        return success_response(
+            data={
+                "doc_id": request.doc_id,
+                "storage": "Redis",
+                "summary": str(response),
+                "summary_length": len(str(response)),
+                "source_nodes_count": len(response.source_nodes),
+            },
+            message="문서의 목적과 핵심 내용을 요약했습니다.",
+            execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+        )
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        return error_response(
+            message=str(e),
+            error="NOT_FOUND",
+            status_code=404,
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="문서 요약 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.post("/summary-streaming")
@@ -313,19 +333,30 @@ async def extract_issues(request: IssueExtractionRequest):
 
         end_time = datetime.now()
 
-        return {
-            "doc_id": request.doc_id,
-            "storage": "Redis",
-            "issues": str(response),
-            "source_nodes": source_nodes_info,
-            "total_source_nodes": len(response.source_nodes),
-            "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-        }
+        return success_response(
+            data={
+                "doc_id": request.doc_id,
+                "storage": "Redis",
+                "issues": str(response),
+                "source_nodes": source_nodes_info,
+                "total_source_nodes": len(response.source_nodes),
+            },
+            message="문서에서 주요 이슈를 추출했습니다.",
+            execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+        )
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        return error_response(
+            message=str(e),
+            error="NOT_FOUND",
+            status_code=404,
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="이슈 추출 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.post("/query")
@@ -353,25 +384,36 @@ async def query_document(request: QueryRequest):
 
             end_time = datetime.now()
 
-            return {
-                "doc_id": request.doc_id,
-                "storage": "Redis",
-                "query": request.query,
-                "response": str(response),
-                "source_nodes": [
-                    {
-                        "score": node.score,
-                        "text_preview": getattr(node.node, "text", "")[:200] + "...",  # type: ignore
-                    }
-                    for node in response.source_nodes
-                ],
-                "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            }
+            return success_response(
+                data={
+                    "doc_id": request.doc_id,
+                    "storage": "Redis",
+                    "query": request.query,
+                    "response": str(response),
+                    "source_nodes": [
+                        {
+                            "score": node.score,
+                            "text_preview": getattr(node.node, "text", "")[:200] + "...",  # type: ignore
+                        }
+                        for node in response.source_nodes
+                    ],
+                },
+                message="질의응답이 완료되었습니다.",
+                execution_time_ms=(end_time - start_time).total_seconds() * 1000,
+            )
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        return error_response(
+            message=str(e),
+            error="NOT_FOUND",
+            status_code=404,
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="질의응답 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.get("/list-documents")
@@ -380,13 +422,20 @@ async def list_indexed_documents():
     try:
         documents = await list_all_documents()
 
-        return {
-            "storage": "Redis",
-            "total_documents": len(documents),
-            "documents": documents,
-        }
+        return success_response(
+            data=documents,
+            message="문서 목록 조회 성공",
+            metadata={
+                "storage": "Redis",
+                "total_documents": len(documents),
+            }
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="문서 목록 조회 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.delete("/delete-document/{doc_id}")
@@ -396,8 +445,10 @@ async def delete_document(doc_id: str):
         # 문서 존재 확인
         exists = await check_document_exists(doc_id)
         if not exists:
-            raise HTTPException(
-                status_code=404, detail=f"문서 ID '{doc_id}'를 찾을 수 없습니다."
+            return error_response(
+                message=f"문서 ID '{doc_id}'를 찾을 수 없습니다.",
+                error="NOT_FOUND",
+                status_code=404,
             )
 
         # 삭제
@@ -406,15 +457,22 @@ async def delete_document(doc_id: str):
         # 남은 문서 수 확인
         remaining_docs = await list_all_documents()
 
-        return {
-            "storage": "Redis",
-            "message": f"문서 '{doc_id}'가 삭제되었습니다.",
-            "remaining_documents": len(remaining_docs),
-        }
+        return success_response(
+            data={"doc_id": doc_id, "deleted": True},
+            message=f"문서 '{doc_id}'가 삭제되었습니다.",
+            metadata={
+                "storage": "Redis",
+                "remaining_documents": len(remaining_docs),
+            }
+        )
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return error_response(
+            message="문서 삭제 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
 
 
 @router.get("/redis-info")
@@ -426,12 +484,18 @@ async def get_redis_info():
         # Redis INFO 명령어로 통계 가져오기
         info = await client.info()
 
-        return {
-            "connected": True,
-            "redis_version": info.get("redis_version"),
-            "used_memory_human": info.get("used_memory_human"),
-            "connected_clients": info.get("connected_clients"),
-            "total_keys": await client.dbsize(),
-        }
+        return success_response(
+            data={
+                "redis_version": info.get("redis_version"),
+                "used_memory_human": info.get("used_memory_human"),
+                "connected_clients": info.get("connected_clients"),
+                "total_keys": await client.dbsize(),
+            },
+            message="Redis 연결 정보 조회 성공",
+        )
     except Exception as e:
-        return {"connected": False, "error": str(e)}
+        return error_response(
+            message="Redis 연결 정보 조회 중 오류가 발생했습니다.",
+            error=str(e),
+            status_code=500,
+        )
