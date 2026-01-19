@@ -37,7 +37,8 @@ async def get_redis_client() -> redis.Redis:
     if _redis_client is None:
         # .env에서 REDIS_URL 읽기, 없으면 기본값 사용
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        _redis_client = await redis.from_url(redis_url, decode_responses=False)
+        # redis.asyncio.from_url은 await 없이 호출 (클라이언트 객체 반환)
+        _redis_client = redis.from_url(redis_url, decode_responses=False)
 
     return _redis_client
 

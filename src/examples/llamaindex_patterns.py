@@ -24,16 +24,15 @@ from llama_index.core.node_parser import (
     SentenceSplitter,
 )
 from llama_index.core.schema import TextNode, NodeRelationship, RelatedNodeInfo
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.core.query_engine import RouterQueryEngine
 from llama_index.core.selectors import LLMSingleSelector
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 
+from src.configs.llama_index import init_llama_index_settings
 
-# Global settings
-Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+
+# LlamaIndex 전역 설정 초기화
+init_llama_index_settings()
 Settings.chunk_size = 512
 Settings.chunk_overlap = 50
 
@@ -104,7 +103,8 @@ async def pattern_2_hierarchical_nodes():
     print_section("Pattern 2: Hierarchical Node Parsing")
 
     # 긴 문서 샘플
-    long_text = """
+    long_text = (
+        """
     # Introduction to Machine Learning
 
     Machine learning is a subset of artificial intelligence that focuses on building
@@ -133,15 +133,15 @@ async def pattern_2_hierarchical_nodes():
 
     Unsupervised learning works with unlabeled data to discover patterns and structures.
     Clustering and dimensionality reduction are primary use cases.
-    """ * 3  # 반복하여 충분한 길이 확보
+    """
+        * 3
+    )  # 반복하여 충분한 길이 확보
 
     # Document 생성
     document = Document(text=long_text, metadata={"source": "ml_guide"})
 
     # 계층적 파서 생성 (3레벨)
-    node_parser = HierarchicalNodeParser.from_defaults(
-        chunk_sizes=[2048, 512, 128]
-    )
+    node_parser = HierarchicalNodeParser.from_defaults(chunk_sizes=[2048, 512, 128])
 
     # 노드 파싱
     start = datetime.now()
@@ -149,7 +149,10 @@ async def pattern_2_hierarchical_nodes():
 
     # Leaf nodes 필터링 (자식 노드가 없는 노드들)
     from llama_index.core.schema import NodeRelationship
-    leaf_nodes = [node for node in nodes if not node.relationships.get(NodeRelationship.CHILD)]
+
+    leaf_nodes = [
+        node for node in nodes if not node.relationships.get(NodeRelationship.CHILD)
+    ]
 
     print(f"✓ Parsed into {len(nodes)} total nodes, {len(leaf_nodes)} leaf nodes")
     print(f"  Execution time: {(datetime.now() - start).total_seconds():.2f}s")
@@ -189,12 +192,12 @@ async def pattern_3_json_indexing():
             "specs": {
                 "battery_life": "30 hours",
                 "connectivity": "Bluetooth 5.0",
-                "noise_cancellation": True
+                "noise_cancellation": True,
             },
             "reviews": [
                 {"rating": 5, "comment": "Great sound quality!"},
-                {"rating": 4, "comment": "Good but expensive"}
-            ]
+                {"rating": 4, "comment": "Good but expensive"},
+            ],
         }
     }
 
@@ -226,7 +229,9 @@ async def pattern_3_json_indexing():
 
     # 전체 JSON 요약 노드 추가
     summary_text = f"Product: {json_data['product']['name']}, Category: {json_data['product']['category']}"
-    nodes.append(TextNode(text=summary_text, metadata={"source": "json", "type": "summary"}))
+    nodes.append(
+        TextNode(text=summary_text, metadata={"source": "json", "type": "summary"})
+    )
 
     print(f"✓ Created {len(nodes)} nodes from JSON")
     print(f"  Sample fields: {text_lines[:3]}")
@@ -274,16 +279,13 @@ Alice Williams,31,Boston,Analyst,75000
     row_nodes = []
     for idx, row in df.iterrows():
         row_text = " | ".join([f"{col}: {row[col]}" for col in df.columns])
-        node = TextNode(
-            text=row_text,
-            metadata={"row_index": idx, "type": "row"}
-        )
+        node = TextNode(text=row_text, metadata={"row_index": idx, "type": "row"})
         row_nodes.append(node)
 
     # 각 열의 통계 노드 생성
     column_nodes = []
     for col in df.columns:
-        if df[col].dtype in ['int64', 'float64']:
+        if df[col].dtype in ["int64", "float64"]:
             stats = df[col].describe()
             col_text = f"Column '{col}' statistics: mean={stats['mean']:.2f}, min={stats['min']}, max={stats['max']}"
         else:
@@ -298,7 +300,9 @@ Alice Williams,31,Boston,Analyst,75000
 
     # 모든 노드 결합
     all_nodes = row_nodes + column_nodes + [summary_node]
-    print(f"✓ Created {len(all_nodes)} nodes ({len(row_nodes)} rows + {len(column_nodes)} columns + 1 summary)")
+    print(
+        f"✓ Created {len(all_nodes)} nodes ({len(row_nodes)} rows + {len(column_nodes)} columns + 1 summary)"
+    )
 
     # 인덱스 생성
     index = VectorStoreIndex(all_nodes)
@@ -328,12 +332,18 @@ async def pattern_5_router_query_engine():
 
     # 여러 문서 생성
     docs = [
-        Document(text="LlamaIndex provides data connectors for various sources like databases, APIs, and files.",
-                metadata={"category": "technical"}),
-        Document(text="The company was founded in 2023 and has 50 employees across 3 offices.",
-                metadata={"category": "business"}),
-        Document(text="Our product features include real-time indexing, semantic search, and RAG capabilities.",
-                metadata={"category": "features"}),
+        Document(
+            text="LlamaIndex provides data connectors for various sources like databases, APIs, and files.",
+            metadata={"category": "technical"},
+        ),
+        Document(
+            text="The company was founded in 2023 and has 50 employees across 3 offices.",
+            metadata={"category": "business"},
+        ),
+        Document(
+            text="Our product features include real-time indexing, semantic search, and RAG capabilities.",
+            metadata={"category": "features"},
+        ),
     ]
 
     print(f"✓ Created {len(docs)} documents")
@@ -350,30 +360,28 @@ async def pattern_5_router_query_engine():
         query_engine=vector_index.as_query_engine(),
         metadata=ToolMetadata(
             name="vector_search",
-            description="Use for semantic search and finding similar content"
-        )
+            description="Use for semantic search and finding similar content",
+        ),
     )
 
     summary_tool = QueryEngineTool(
         query_engine=summary_index.as_query_engine(),
         metadata=ToolMetadata(
-            name="summary_search",
-            description="Use for getting summaries and overviews"
-        )
+            name="summary_search", description="Use for getting summaries and overviews"
+        ),
     )
 
     keyword_tool = QueryEngineTool(
         query_engine=keyword_index.as_query_engine(),
         metadata=ToolMetadata(
-            name="keyword_search",
-            description="Use for exact keyword matching"
-        )
+            name="keyword_search", description="Use for exact keyword matching"
+        ),
     )
 
     # Router 생성
     router_query_engine = RouterQueryEngine(
         selector=LLMSingleSelector.from_defaults(),
-        query_engine_tools=[vector_tool, summary_tool, keyword_tool]
+        query_engine_tools=[vector_tool, summary_tool, keyword_tool],
     )
 
     print("✓ Created Router Query Engine")
@@ -410,12 +418,13 @@ async def pattern_6_custom_hierarchical_nodes():
     sections = [
         {
             "title": "Introduction",
-            "text": "This is an introduction to our product. " * 20
+            "text": "This is an introduction to our product. " * 20,
         },
         {
             "title": "Features",
-            "text": "Our product has many great features including AI, automation, and analytics. " * 20
-        }
+            "text": "Our product has many great features including AI, automation, and analytics. "
+            * 20,
+        },
     ]
 
     all_nodes = []
@@ -423,8 +432,7 @@ async def pattern_6_custom_hierarchical_nodes():
     for section in sections:
         # Parent 노드 (전체 섹션)
         parent_node = TextNode(
-            text=section["text"],
-            metadata={"title": section["title"], "type": "parent"}
+            text=section["text"], metadata={"title": section["title"], "type": "parent"}
         )
 
         # Child 노드들 (작은 청크로 분할)
@@ -435,7 +443,7 @@ async def pattern_6_custom_hierarchical_nodes():
         for i, child_text in enumerate(child_texts):
             child_node = TextNode(
                 text=child_text,
-                metadata={"title": section["title"], "type": "child", "chunk": i}
+                metadata={"title": section["title"], "type": "child", "chunk": i},
             )
 
             # Child -> Parent 관계
@@ -454,7 +462,9 @@ async def pattern_6_custom_hierarchical_nodes():
 
     print(f"✓ Created custom hierarchy:")
     print(f"  - {len(sections)} parent nodes")
-    print(f"  - {len([n for n in all_nodes if n.metadata.get('type') == 'child'])} child nodes")
+    print(
+        f"  - {len([n for n in all_nodes if n.metadata.get('type') == 'child'])} child nodes"
+    )
     print(f"  - Total: {len(all_nodes)} nodes")
 
     # Child 노드만으로 인덱스 생성
@@ -486,14 +496,22 @@ async def pattern_7_metadata_filtering():
 
     # 여러 카테고리의 문서
     docs = [
-        Document(text="Python is a versatile programming language.",
-                metadata={"category": "programming", "language": "python"}),
-        Document(text="JavaScript is widely used for web development.",
-                metadata={"category": "programming", "language": "javascript"}),
-        Document(text="Machine learning models require training data.",
-                metadata={"category": "ai", "topic": "ml"}),
-        Document(text="Deep learning uses neural networks.",
-                metadata={"category": "ai", "topic": "dl"}),
+        Document(
+            text="Python is a versatile programming language.",
+            metadata={"category": "programming", "language": "python"},
+        ),
+        Document(
+            text="JavaScript is widely used for web development.",
+            metadata={"category": "programming", "language": "javascript"},
+        ),
+        Document(
+            text="Machine learning models require training data.",
+            metadata={"category": "ai", "topic": "ml"},
+        ),
+        Document(
+            text="Deep learning uses neural networks.",
+            metadata={"category": "ai", "topic": "dl"},
+        ),
     ]
 
     print(f"✓ Created {len(docs)} documents with categories")
@@ -512,9 +530,7 @@ async def pattern_7_metadata_filtering():
     from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
 
     filtered_query_engine = index.as_query_engine(
-        filters=MetadataFilters(
-            filters=[ExactMatchFilter(key="category", value="ai")]
-        )
+        filters=MetadataFilters(filters=[ExactMatchFilter(key="category", value="ai")])
     )
 
     print(f"\nQuery (filtered to 'ai' category): {query}")

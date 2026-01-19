@@ -17,6 +17,7 @@ from src.models.user import User
 
 # Pydantic Request/Response Models
 from src.models.document_analysis import (
+    ChunkConfig,
     DocumentUploadRequest,
     QueryRequest,
     SummaryRequest,
@@ -30,6 +31,7 @@ __all__ = [
     "Customer",
     "User",
     # Request/Response Models
+    "ChunkConfig",
     "DocumentUploadRequest",
     "QueryRequest",
     "SummaryRequest",

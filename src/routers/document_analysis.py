@@ -9,10 +9,6 @@ from fastapi.responses import StreamingResponse
 import os
 from datetime import datetime
 
-from llama_index.core import Settings
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
-
 from src.models import (
     DocumentUploadRequest,
     QueryRequest,
@@ -30,10 +26,6 @@ from src.utils import (
 
 
 router = APIRouter(prefix="/document-analysis", tags=["Document Analysis"])
-
-# LlamaIndex 설정
-Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
 # 인덱스 저장소 (실제 환경에서는 Redis 등 사용)
 _index_storage = {}
@@ -60,7 +52,7 @@ async def upload_pdf_from_docs(request: DocumentUploadRequest):
         if not os.path.exists(pdf_path):
             raise HTTPException(
                 status_code=404,
-                detail=f"파일을 찾을 수 없습니다: {pdf_path}. docs 폴더에 파일을 배치했는지 확인하세요."
+                detail=f"파일을 찾을 수 없습니다: {pdf_path}. docs 폴더에 파일을 배치했는지 확인하세요.",
             )
 
         # PDF 로드
@@ -76,7 +68,7 @@ async def upload_pdf_from_docs(request: DocumentUploadRequest):
             "num_pages": len(documents),
             "total_nodes": total_nodes,
             "child_nodes": child_nodes,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
         }
 
         end_time = datetime.now()
@@ -124,8 +116,7 @@ async def get_document_summary(request: SummaryRequest):
         index = storage["index"]
 
         query_engine = index.as_query_engine(
-            similarity_top_k=5,
-            response_mode="compact"
+            similarity_top_k=5, response_mode="compact"
         )
 
         query = f"""
@@ -167,15 +158,15 @@ async def get_document_summary_streaming(request: SummaryRequest):
     """
     try:
         if request.doc_id not in _index_storage:
-            raise HTTPException(status_code=404, detail=f"문서 ID '{request.doc_id}'를 찾을 수 없습니다.")
+            raise HTTPException(
+                status_code=404,
+                detail=f"문서 ID '{request.doc_id}'를 찾을 수 없습니다.",
+            )
 
         storage = _index_storage[request.doc_id]
         index = storage["index"]
 
-        query_engine = index.as_query_engine(
-            streaming=True,
-            similarity_top_k=5
-        )
+        query_engine = index.as_query_engine(streaming=True, similarity_top_k=5)
 
         query = f"""
         이 문서의 목적과 핵심 내용을 한 문단({request.max_length}자 이내)으로 요약해 주세요.
@@ -186,7 +177,7 @@ async def get_document_summary_streaming(request: SummaryRequest):
 
         return StreamingResponse(
             stream_response(streaming_response.response_gen),
-            media_type="text/event-stream"
+            media_type="text/event-stream",
         )
 
     except HTTPException:
@@ -216,8 +207,7 @@ async def extract_issues(request: IssueExtractionRequest):
         index = storage["index"]
 
         query_engine = index.as_query_engine(
-            similarity_top_k=request.top_k,
-            response_mode="tree_summarize"
+            similarity_top_k=request.top_k, response_mode="tree_summarize"
         )
 
         query = """
@@ -235,10 +225,16 @@ async def extract_issues(request: IssueExtractionRequest):
         source_nodes_info = [
             {
                 "score": node.score,
-                "text_preview": node.node.text[:200] + "..." if len(node.node.text) > 200 else node.node.text,
-                "metadata": node.node.metadata
+                "text_preview": (
+                    node.node.text[:200] + "..."
+                    if len(node.node.text) > 200
+                    else node.node.text
+                ),
+                "metadata": node.node.metadata,
             }
-            for node in sorted(response.source_nodes, key=lambda x: x.score, reverse=True)[:5]
+            for node in sorted(
+                response.source_nodes, key=lambda x: x.score, reverse=True
+            )[:5]
         ]
 
         end_time = datetime.now()
@@ -286,19 +282,16 @@ async def query_document(request: QueryRequest):
 
         if request.streaming:
             query_engine = index.as_query_engine(
-                streaming=True,
-                similarity_top_k=request.top_k
+                streaming=True, similarity_top_k=request.top_k
             )
             streaming_response = query_engine.query(request.query)
 
             return StreamingResponse(
                 stream_response(streaming_response.response_gen),
-                media_type="text/event-stream"
+                media_type="text/event-stream",
             )
         else:
-            query_engine = index.as_query_engine(
-                similarity_top_k=request.top_k
-            )
+            query_engine = index.as_query_engine(similarity_top_k=request.top_k)
             response = query_engine.query(request.query)
 
             end_time = datetime.now()
@@ -311,7 +304,11 @@ async def query_document(request: QueryRequest):
                     "source_nodes": [
                         {
                             "score": node.score,
-                            "text_preview": node.node.text[:200] + "..." if len(node.node.text) > 200 else node.node.text,
+                            "text_preview": (
+                                node.node.text[:200] + "..."
+                                if len(node.node.text) > 200
+                                else node.node.text
+                            ),
                         }
                         for node in response.source_nodes
                     ],
@@ -337,21 +334,23 @@ async def list_indexed_documents():
     """
     documents = []
     for doc_id, storage in _index_storage.items():
-        documents.append({
-            "doc_id": doc_id,
-            "file_name": storage["file_name"],
-            "num_pages": storage["num_pages"],
-            "total_nodes": storage["total_nodes"],
-            "child_nodes": storage["child_nodes"],
-            "created_at": storage["created_at"]
-        })
+        documents.append(
+            {
+                "doc_id": doc_id,
+                "file_name": storage["file_name"],
+                "num_pages": storage["num_pages"],
+                "total_nodes": storage["total_nodes"],
+                "child_nodes": storage["child_nodes"],
+                "created_at": storage["created_at"],
+            }
+        )
 
     return success_response(
         data=documents,
         message="문서 목록 조회 성공",
         metadata={
             "total_documents": len(documents),
-        }
+        },
     )
 
 
@@ -374,5 +373,5 @@ async def delete_document(doc_id: str):
         message=f"문서 '{doc_id}'가 삭제되었습니다.",
         metadata={
             "remaining_documents": len(_index_storage),
-        }
+        },
     )

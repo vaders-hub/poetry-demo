@@ -4,22 +4,14 @@
 정부 정책 문서의 조항, 사유, 근거, 예외 조건 등을 분석하는 전문 API
 - Models는 src/models/document_analysis.py에서 import
 - 헬퍼 함수는 src/utils/document_analysis.py에서 import
+- Redis 유틸리티는 src/utils/redis_index.py에서 import
 """
 
-import os
-import pickle
-import base64
 from datetime import datetime
-from typing import Dict, Any
 
 from fastapi import APIRouter
 
-from llama_index.core import VectorStoreIndex, Settings
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
-
 from src.models.document_analysis import (
-    DocumentUploadRequest,
     ReasonAnalysisRequest,
     ExceptionClauseRequest,
     ClauseSearchRequest,
@@ -27,12 +19,10 @@ from src.models.document_analysis import (
 from src.utils import (
     success_response,
     error_response,
-    get_redis_client,
     ping_redis,
+    load_index_from_redis,
 )
 from src.utils.document_analysis import (
-    load_pdf_from_path,
-    create_hierarchical_index,
     extract_source_references,
     format_citation,
     get_exception_keywords,
@@ -44,136 +34,10 @@ router = APIRouter(
     prefix="/document-clause-analysis", tags=["Document Clause Analysis (Redis)"]
 )
 
-# LlamaIndex 설정
-Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
-
-
-# ============================================================================
-# Redis 저장/로드 헬퍼
-# ============================================================================
-
-
-async def load_index_from_redis(doc_id: str) -> tuple[VectorStoreIndex, Dict[str, Any]]:
-    """Redis에서 인덱스 로드"""
-    client = await get_redis_client()
-
-    # Redis에서 데이터 가져오기
-    data = await client.hgetall(f"doc:{doc_id}")  # type: ignore
-
-    if not data:
-        raise ValueError(f"문서 ID '{doc_id}'를 Redis에서 찾을 수 없습니다.")
-
-    # 인덱스 복원
-    index_base64 = data.get(b"index")
-    metadata_json = data.get(b"metadata")
-
-    if not index_base64:
-        raise ValueError(f"문서 ID '{doc_id}'의 인덱스가 손상되었습니다.")
-
-    index_bytes = base64.b64decode(index_base64)
-    index = pickle.loads(index_bytes)
-
-    metadata = {}
-    if metadata_json:
-        import json
-
-        metadata = json.loads(metadata_json.decode("utf-8"))
-
-    return index, metadata
-
 
 # ============================================================================
 # Endpoints
 # ============================================================================
-
-
-@router.post("/upload-from-docs")
-async def upload_document_from_docs(request: DocumentUploadRequest):
-    """
-    docs/ 디렉토리에서 PDF 파일 업로드 및 인덱스 생성
-
-    Request:
-    ```json
-    {
-        "file_name": "2024소상공인_지원정책.pdf",
-        "doc_id": "policy_2024_v1"
-    }
-    ```
-
-    Redis 저장:
-    - 키: doc:{doc_id}
-    - 필드: index (Base64 인코딩), metadata (JSON)
-    """
-    try:
-        start_time = datetime.now()
-
-        # PDF 파일 경로
-        pdf_path = os.path.join("docs", request.file_name)
-
-        # PDF 로드
-        documents = await load_pdf_from_path(pdf_path)
-
-        # 계층적 인덱스 생성
-        index, total_chunks, child_chunks = await create_hierarchical_index(documents)
-
-        # Redis 저장
-        index_bytes = pickle.dumps(index)
-        index_base64 = base64.b64encode(index_bytes).decode("utf-8")
-
-        metadata = {
-            "doc_id": request.doc_id,
-            "file_name": request.file_name,
-            "total_pages": len(documents),
-            "total_chunks": total_chunks,
-            "parent_chunks": total_chunks - child_chunks,
-            "child_chunks": child_chunks,
-            "created_at": datetime.now().isoformat(),
-        }
-
-        import json
-
-        client = await get_redis_client()
-        await client.hset(  # type: ignore
-            f"doc:{request.doc_id}",
-            mapping={
-                "index": index_base64,
-                "metadata": json.dumps(metadata, ensure_ascii=False),
-            },
-        )
-
-        end_time = datetime.now()
-
-        return success_response(
-            data={
-                "doc_id": request.doc_id,
-                "file_name": request.file_name,
-                "total_pages": len(documents),
-                "total_chunks": total_chunks,
-                "parent_chunks": total_chunks - child_chunks,
-                "child_chunks": child_chunks,
-            },
-            message="문서가 업로드되고 인덱스가 생성되었습니다.",
-            execution_time_ms=(end_time - start_time).total_seconds() * 1000,
-            metadata={
-                "index_type": "hierarchical",
-                "parent_chunk_size": 2048,
-                "child_chunk_size": 512,
-            },
-        )
-
-    except FileNotFoundError as e:
-        return error_response(
-            message=f"파일을 찾을 수 없습니다: {request.file_name}",
-            error=str(e),
-            status_code=404,
-        )
-    except Exception as e:
-        return error_response(
-            message="문서 업로드 중 오류가 발생했습니다.",
-            error=str(e),
-            status_code=500,
-        )
 
 
 @router.post("/analyze-reason")
@@ -211,29 +75,29 @@ async def analyze_decision_reason(request: ReasonAnalysisRequest):
 
         # 사유 분석 프롬프트
         query = f"""
-다음 조치 또는 판단에 대한 구체적인 사유와 근거를 분석해주세요:
+            다음 조치 또는 판단에 대한 구체적인 사유와 근거를 분석해주세요:
 
-**조치/판단**: {request.decision_or_action}
+            **조치/판단**: {request.decision_or_action}
 
-아래 형식으로 답변해주세요:
+            아래 형식으로 답변해주세요:
 
-## 1. 주요 사유
-- [사유 1]
-- [사유 2]
-...
+            ## 1. 주요 사유
+            - [사유 1]
+            - [사유 2]
+            ...
 
-## 2. 근거 및 배경
-- [근거 1]
-- [근거 2]
-...
+            ## 2. 근거 및 배경
+            - [근거 1]
+            - [근거 2]
+            ...
 
-## 3. 관련 조항 또는 정책
-- [조항/정책 1]
-- [조항/정책 2]
-...
+            ## 3. 관련 조항 또는 정책
+            - [조항/정책 1]
+            - [조항/정책 2]
+            ...
 
-각 항목에는 문서의 구체적인 내용을 인용하여 근거를 명확히 해주세요.
-"""
+            각 항목에는 문서의 구체적인 내용을 인용하여 근거를 명확히 해주세요.
+            """
 
         # 쿼리 실행
         response = query_engine.query(query)

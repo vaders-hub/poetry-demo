@@ -38,15 +38,23 @@ async def load_pdf_from_path(pdf_path: str) -> list[Document]:
 
 async def create_hierarchical_index(
     documents: list[Document],
+    parent_chunk_size: int = 2048,
+    child_chunk_size: int = 512,
+    parent_chunk_overlap: int = 100,
+    child_chunk_overlap: int = 50,
 ) -> tuple[VectorStoreIndex, int, int]:
     """
     계층적 인덱스 생성
 
-    Parent 노드(2048자)와 Child 노드(512자)로 구성된 계층적 인덱스 생성
+    Parent 노드와 Child 노드로 구성된 계층적 인덱스 생성
     검색은 Child 노드로, 컨텍스트는 Parent 노드에서 가져옴
 
     Args:
         documents: LlamaIndex Document 리스트
+        parent_chunk_size: Parent 청크 크기 (기본값: 2048)
+        child_chunk_size: Child 청크 크기 (기본값: 512)
+        parent_chunk_overlap: Parent 청크 오버랩 (기본값: 100)
+        child_chunk_overlap: Child 청크 오버랩 (기본값: 50)
 
     Returns:
         tuple: (VectorStoreIndex, 전체 노드 수, Child 노드 수)
@@ -54,8 +62,10 @@ async def create_hierarchical_index(
     # 문서 전체를 하나의 텍스트로 결합
     full_text = "\n\n".join([doc.text for doc in documents])
 
-    # Parent 노드 생성 (큰 청크: 2048자)
-    parent_splitter = SentenceSplitter(chunk_size=2048, chunk_overlap=100)
+    # Parent 노드 생성
+    parent_splitter = SentenceSplitter(
+        chunk_size=parent_chunk_size, chunk_overlap=parent_chunk_overlap
+    )
     parent_chunks = parent_splitter.split_text(full_text)
 
     all_nodes = []
@@ -70,8 +80,10 @@ async def create_hierarchical_index(
             },
         )
 
-        # Child 노드들 (작은 청크: 512자)
-        child_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
+        # Child 노드들
+        child_splitter = SentenceSplitter(
+            chunk_size=child_chunk_size, chunk_overlap=child_chunk_overlap
+        )
         child_chunks = child_splitter.split_text(parent_text)
 
         child_nodes = []
@@ -125,6 +137,7 @@ async def stream_response(response_gen) -> AsyncIterator[str]:
 
 # ==================== Clause Analysis 헬퍼 함수 ====================
 
+
 def extract_source_references(source_nodes: list, top_n: int = 5) -> list[dict]:
     """
     소스 노드에서 참조 정보 추출
@@ -153,13 +166,15 @@ def extract_source_references(source_nodes: list, top_n: int = 5) -> list[dict]:
         node_info = {
             "reference_number": idx,
             "score": round(float(node.score or 0.0), 4),
-            "text_preview": node_text[:300] + "..." if len(node_text) > 300 else node_text,
+            "text_preview": (
+                node_text[:300] + "..." if len(node_text) > 300 else node_text
+            ),
             "full_text": node_text,
             "metadata": {
                 "page": node_metadata.get("page_label", "Unknown"),
                 "chunk_index": node_metadata.get("chunk_index", 0),
                 "node_type": node_metadata.get("node_type", "unknown"),
-            }
+            },
         }
 
         # Child 노드인 경우 parent_index 추가
@@ -213,20 +228,11 @@ def get_exception_keywords() -> list[str]:
     Returns:
         예외 키워드 리스트
     """
-    return [
-        "다만",
-        "단서",
-        "예외",
-        "제외",
-        "이 경우",
-        "특례",
-        "불구하고"
-    ]
+    return ["다만", "단서", "예외", "제외", "이 경우", "특례", "불구하고"]
 
 
 def highlight_exception_sources(
-    source_references: list[dict],
-    exception_keywords: list[str] = None
+    source_references: list[dict], exception_keywords: list[str] | None = None
 ) -> list[dict]:
     """
     예외 키워드가 포함된 소스만 필터링 및 하이라이팅
@@ -260,8 +266,7 @@ def highlight_exception_sources(
 
         # 텍스트에서 발견된 예외 키워드 추출
         found_keywords = [
-            keyword for keyword in exception_keywords
-            if keyword in full_text
+            keyword for keyword in exception_keywords if keyword in full_text
         ]
 
         if found_keywords:
@@ -269,3 +274,44 @@ def highlight_exception_sources(
             highlighted_sources.append(ref)
 
     return highlighted_sources
+
+
+# ==================== Report Generation 헬퍼 함수 ====================
+
+
+async def generate_structured_query(
+    index: VectorStoreIndex,
+    query: str,
+    response_mode: str = "tree_summarize",
+    top_k: int = 20,
+) -> tuple[str, list]:
+    """
+    구조화된 쿼리 실행 (보고서, 체크리스트 등)
+
+    Args:
+        index: LlamaIndex VectorStoreIndex
+        query: 쿼리 문자열
+        response_mode: 응답 모드 (tree_summarize, compact 등)
+        top_k: 검색할 청크 개수
+
+    Returns:
+        tuple: (응답 텍스트, 소스 노드 리스트)
+
+    Examples:
+        >>> response_text, source_nodes = await generate_structured_query(
+        ...     index=my_index,
+        ...     query="문서의 주요 내용을 요약해주세요",
+        ...     response_mode="tree_summarize",
+        ...     top_k=20
+        ... )
+    """
+    query_engine = index.as_query_engine(
+        similarity_top_k=top_k, response_mode=response_mode
+    )
+
+    response = query_engine.query(query)
+
+    response_text = str(response)
+    source_nodes = getattr(response, "source_nodes", [])
+
+    return response_text, source_nodes

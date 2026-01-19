@@ -28,8 +28,6 @@ from llama_index.core.node_parser import (
     SentenceSplitter,
 )
 from llama_index.core.schema import TextNode, NodeRelationship, RelatedNodeInfo
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.core.query_engine import RouterQueryEngine
 from llama_index.core.selectors import LLMSingleSelector
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
@@ -38,9 +36,7 @@ from llama_index.core.query_engine import RetrieverQueryEngine
 
 router = APIRouter(prefix="/llamaindex", tags=["LlamaIndex Examples"])
 
-# Global settings for LlamaIndex
-Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+# 청크 설정 (이 라우터 전용)
 Settings.chunk_size = 512
 Settings.chunk_overlap = 50
 
@@ -55,37 +51,45 @@ _indices_storage = {}
 
 class DocumentRequest(BaseModel):
     """단순 문서 요청"""
+
     text: str = Field(description="인덱싱할 문서 텍스트")
     doc_id: str = Field(description="문서 ID")
 
 
 class QueryRequest(BaseModel):
     """쿼리 요청"""
+
     query: str = Field(description="질의문")
     index_id: str = Field(description="인덱스 ID")
 
 
 class JSONDocumentRequest(BaseModel):
     """JSON 문서 요청"""
+
     json_data: Dict[str, Any] = Field(description="JSON 데이터")
     doc_id: str = Field(description="문서 ID")
 
 
 class TableDataRequest(BaseModel):
     """테이블 데이터 요청"""
+
     csv_data: str = Field(description="CSV 형식의 테이블 데이터")
     doc_id: str = Field(description="문서 ID")
 
 
 class HierarchicalDocRequest(BaseModel):
     """계층적 문서 요청"""
+
     sections: List[Dict[str, Any]] = Field(description="섹션 목록")
     doc_id: str = Field(description="문서 ID")
 
 
 class MultiDocumentRequest(BaseModel):
     """다중 문서 요청"""
-    documents: List[Dict[str, str]] = Field(description="문서 목록 (id, text, metadata)")
+
+    documents: List[Dict[str, str]] = Field(
+        description="문서 목록 (id, text, metadata)"
+    )
     index_id: str = Field(description="인덱스 ID")
 
 
@@ -107,7 +111,10 @@ async def create_basic_vector_index(request: DocumentRequest):
         # Document 생성
         document = Document(
             text=request.text,
-            metadata={"doc_id": request.doc_id, "created_at": datetime.now().isoformat()}
+            metadata={
+                "doc_id": request.doc_id,
+                "created_at": datetime.now().isoformat(),
+            },
         )
 
         # VectorStoreIndex 생성
@@ -125,7 +132,7 @@ async def create_basic_vector_index(request: DocumentRequest):
             "num_documents": 1,
             "text_length": len(request.text),
             "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "Basic vector index created using embeddings"
+            "explanation": "Basic vector index created using embeddings",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -145,7 +152,9 @@ async def query_vector_index(request: QueryRequest):
     """
     try:
         if request.index_id not in _indices_storage:
-            raise HTTPException(status_code=404, detail=f"Index {request.index_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Index {request.index_id} not found"
+            )
 
         start_time = datetime.now()
 
@@ -165,14 +174,18 @@ async def query_vector_index(request: QueryRequest):
             "response": str(response),
             "source_nodes": [
                 {
-                    "text": node.node.text[:200] + "..." if len(node.node.text) > 200 else node.node.text,
+                    "text": (
+                        node.node.text[:200] + "..."
+                        if len(node.node.text) > 200
+                        else node.node.text
+                    ),
                     "score": node.score,
-                    "metadata": node.node.metadata
+                    "metadata": node.node.metadata,
                 }
                 for node in response.source_nodes
             ],
             "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "Query executed against vector index"
+            "explanation": "Query executed against vector index",
         }
     except HTTPException:
         raise
@@ -210,8 +223,8 @@ async def create_hierarchical_index(request: HierarchicalDocRequest):
                     "doc_id": request.doc_id,
                     "section_title": section.get("title", ""),
                     "section_level": section.get("level", 1),
-                    "created_at": datetime.now().isoformat()
-                }
+                    "created_at": datetime.now().isoformat(),
+                },
             )
             documents.append(doc)
 
@@ -219,7 +232,9 @@ async def create_hierarchical_index(request: HierarchicalDocRequest):
         nodes = node_parser.get_nodes_from_documents(documents)
 
         # Leaf nodes 필터링 (자식 노드가 없는 노드들)
-        leaf_nodes = [node for node in nodes if not node.relationships.get(NodeRelationship.CHILD)]
+        leaf_nodes = [
+            node for node in nodes if not node.relationships.get(NodeRelationship.CHILD)
+        ]
 
         # VectorStoreIndex 생성 (leaf nodes만 사용)
         index = VectorStoreIndex(leaf_nodes)
@@ -229,7 +244,7 @@ async def create_hierarchical_index(request: HierarchicalDocRequest):
         _indices_storage[index_id] = {
             "index": index,
             "all_nodes": nodes,
-            "leaf_nodes": leaf_nodes
+            "leaf_nodes": leaf_nodes,
         }
 
         end_time = datetime.now()
@@ -242,7 +257,7 @@ async def create_hierarchical_index(request: HierarchicalDocRequest):
             "leaf_nodes": len(leaf_nodes),
             "hierarchy_levels": 3,
             "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "Hierarchical index with 3 levels: 2048 -> 512 -> 128 chunks"
+            "explanation": "Hierarchical index with 3 levels: 2048 -> 512 -> 128 chunks",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -298,8 +313,8 @@ async def create_json_index(request: JSONDocumentRequest):
                 metadata={
                     "doc_id": request.doc_id,
                     "source": "json",
-                    "full_json": json.dumps(request.json_data)
-                }
+                    "full_json": json.dumps(request.json_data),
+                },
             )
             nodes.append(node)
 
@@ -309,8 +324,8 @@ async def create_json_index(request: JSONDocumentRequest):
             metadata={
                 "doc_id": request.doc_id,
                 "source": "json",
-                "node_type": "summary"
-            }
+                "node_type": "summary",
+            },
         )
         nodes.append(summary_node)
 
@@ -330,7 +345,7 @@ async def create_json_index(request: JSONDocumentRequest):
             "num_nodes": len(nodes),
             "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
             "sample_fields": text_lines[:5],
-            "explanation": "JSON data flattened and indexed with hierarchical field paths"
+            "explanation": "JSON data flattened and indexed with hierarchical field paths",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -364,8 +379,8 @@ async def create_table_index(request: TableDataRequest):
                     "doc_id": request.doc_id,
                     "row_index": idx,
                     "source": "table",
-                    "node_type": "row"
-                }
+                    "node_type": "row",
+                },
             )
             row_nodes.append(node)
 
@@ -379,8 +394,8 @@ async def create_table_index(request: TableDataRequest):
                     "doc_id": request.doc_id,
                     "column_name": col,
                     "source": "table",
-                    "node_type": "column_summary"
-                }
+                    "node_type": "column_summary",
+                },
             )
             column_nodes.append(node)
 
@@ -391,8 +406,8 @@ async def create_table_index(request: TableDataRequest):
             metadata={
                 "doc_id": request.doc_id,
                 "source": "table",
-                "node_type": "table_summary"
-            }
+                "node_type": "table_summary",
+            },
         )
 
         # 모든 노드 결합
@@ -415,7 +430,7 @@ async def create_table_index(request: TableDataRequest):
             "columns": list(df.columns),
             "total_nodes": len(all_nodes),
             "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "Table indexed with row nodes, column summaries, and table summary"
+            "explanation": "Table indexed with row nodes, column summaries, and table summary",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -445,7 +460,7 @@ async def create_multi_index(request: MultiDocumentRequest):
                 metadata={
                     "doc_id": doc_data["id"],
                     "category": doc_data.get("category", "general"),
-                }
+                },
             )
             documents.append(doc)
 
@@ -463,30 +478,30 @@ async def create_multi_index(request: MultiDocumentRequest):
             query_engine=vector_index.as_query_engine(),
             metadata=ToolMetadata(
                 name="vector_search",
-                description="Useful for semantic search and finding similar content based on meaning"
-            )
+                description="Useful for semantic search and finding similar content based on meaning",
+            ),
         )
 
         summary_tool = QueryEngineTool(
             query_engine=summary_index.as_query_engine(),
             metadata=ToolMetadata(
                 name="summary_search",
-                description="Useful for getting summaries and overviews of all documents"
-            )
+                description="Useful for getting summaries and overviews of all documents",
+            ),
         )
 
         keyword_tool = QueryEngineTool(
             query_engine=keyword_index.as_query_engine(),
             metadata=ToolMetadata(
                 name="keyword_search",
-                description="Useful for keyword-based search and exact term matching"
-            )
+                description="Useful for keyword-based search and exact term matching",
+            ),
         )
 
         # Router Query Engine 생성
         router_query_engine = RouterQueryEngine(
             selector=LLMSingleSelector.from_defaults(),
-            query_engine_tools=[vector_tool, summary_tool, keyword_tool]
+            query_engine_tools=[vector_tool, summary_tool, keyword_tool],
         )
 
         # 인덱스 저장
@@ -495,7 +510,7 @@ async def create_multi_index(request: MultiDocumentRequest):
             "router": router_query_engine,
             "vector_index": vector_index,
             "summary_index": summary_index,
-            "keyword_index": keyword_index
+            "keyword_index": keyword_index,
         }
 
         end_time = datetime.now()
@@ -505,7 +520,7 @@ async def create_multi_index(request: MultiDocumentRequest):
             "index_types": ["VectorStoreIndex", "SummaryIndex", "KeywordTableIndex"],
             "num_documents": len(documents),
             "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "Created multiple index types with router for automatic selection"
+            "explanation": "Created multiple index types with router for automatic selection",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -525,7 +540,9 @@ async def query_router_index(request: QueryRequest):
     """
     try:
         if request.index_id not in _indices_storage:
-            raise HTTPException(status_code=404, detail=f"Index {request.index_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Index {request.index_id} not found"
+            )
 
         storage = _indices_storage[request.index_id]
         if "router" not in storage:
@@ -542,9 +559,11 @@ async def query_router_index(request: QueryRequest):
         return {
             "query": request.query,
             "response": str(response),
-            "selected_tool": getattr(response, "metadata", {}).get("selector_result", "unknown"),
+            "selected_tool": getattr(response, "metadata", {}).get(
+                "selector_result", "unknown"
+            ),
             "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "Router automatically selected the best index for this query"
+            "explanation": "Router automatically selected the best index for this query",
         }
     except HTTPException:
         raise
@@ -566,11 +585,16 @@ async def query_with_recursive_retriever(request: QueryRequest):
     """
     try:
         if request.index_id not in _indices_storage:
-            raise HTTPException(status_code=404, detail=f"Index {request.index_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Index {request.index_id} not found"
+            )
 
         storage = _indices_storage[request.index_id]
         if "all_nodes" not in storage:
-            raise HTTPException(status_code=400, detail="This index does not support recursive retrieval")
+            raise HTTPException(
+                status_code=400,
+                detail="This index does not support recursive retrieval",
+            )
 
         start_time = datetime.now()
 
@@ -585,7 +609,7 @@ async def query_with_recursive_retriever(request: QueryRequest):
         retriever = RecursiveRetriever(
             "vector",
             retriever_dict={"vector": index.as_retriever()},
-            node_dict=node_dict
+            node_dict=node_dict,
         )
 
         # Query Engine 생성
@@ -601,7 +625,7 @@ async def query_with_recursive_retriever(request: QueryRequest):
             "response": str(response),
             "num_source_nodes": len(response.source_nodes),
             "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "Used recursive retriever to fetch parent context from hierarchical nodes"
+            "explanation": "Used recursive retriever to fetch parent context from hierarchical nodes",
         }
     except HTTPException:
         raise
@@ -635,8 +659,8 @@ async def create_custom_node_index(request: HierarchicalDocRequest):
                 metadata={
                     "doc_id": request.doc_id,
                     "section_title": section.get("title", ""),
-                    "node_type": "parent"
-                }
+                    "node_type": "parent",
+                },
             )
 
             # Child 노드들 (섹션을 작은 청크로 분할)
@@ -651,8 +675,8 @@ async def create_custom_node_index(request: HierarchicalDocRequest):
                         "doc_id": request.doc_id,
                         "section_title": section.get("title", ""),
                         "node_type": "child",
-                        "chunk_index": i
-                    }
+                        "chunk_index": i,
+                    },
                 )
 
                 # Child -> Parent 관계 설정
@@ -671,7 +695,9 @@ async def create_custom_node_index(request: HierarchicalDocRequest):
             all_nodes.extend([parent_node] + child_nodes)
 
         # Child 노드만으로 인덱스 생성 (검색은 작은 청크로)
-        child_only_nodes = [n for n in all_nodes if n.metadata.get("node_type") == "child"]
+        child_only_nodes = [
+            n for n in all_nodes if n.metadata.get("node_type") == "child"
+        ]
         index = VectorStoreIndex(child_only_nodes)
 
         # 인덱스 저장
@@ -680,7 +706,7 @@ async def create_custom_node_index(request: HierarchicalDocRequest):
             "index": index,
             "all_nodes": all_nodes,
             "parent_nodes": parent_nodes,
-            "child_nodes": child_only_nodes
+            "child_nodes": child_only_nodes,
         }
 
         end_time = datetime.now()
@@ -693,7 +719,7 @@ async def create_custom_node_index(request: HierarchicalDocRequest):
             "num_child_nodes": len(child_only_nodes),
             "total_nodes": len(all_nodes),
             "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-            "explanation": "Custom parent-child relationships with manual node creation"
+            "explanation": "Custom parent-child relationships with manual node creation",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -714,21 +740,22 @@ async def list_indices():
     for index_id, storage in _indices_storage.items():
         if isinstance(storage, dict):
             index_type = "Multi-Index" if "router" in storage else "Hierarchical"
-            num_nodes = len(storage.get("all_nodes", [])) if "all_nodes" in storage else "N/A"
+            num_nodes = (
+                len(storage.get("all_nodes", [])) if "all_nodes" in storage else "N/A"
+            )
         else:
             index_type = type(storage).__name__
             num_nodes = "N/A"
 
-        indices_info.append({
-            "index_id": index_id,
-            "index_type": index_type,
-            "num_nodes": num_nodes,
-        })
+        indices_info.append(
+            {
+                "index_id": index_id,
+                "index_type": index_type,
+                "num_nodes": num_nodes,
+            }
+        )
 
-    return {
-        "total_indices": len(_indices_storage),
-        "indices": indices_info
-    }
+    return {"total_indices": len(_indices_storage), "indices": indices_info}
 
 
 # ============================================================================
@@ -748,5 +775,5 @@ async def delete_index(index_id: str):
 
     return {
         "message": f"Index {index_id} deleted successfully",
-        "remaining_indices": len(_indices_storage)
+        "remaining_indices": len(_indices_storage),
     }

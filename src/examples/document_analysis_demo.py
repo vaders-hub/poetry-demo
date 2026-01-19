@@ -9,15 +9,13 @@ PDF 문서를 LlamaIndex로 인덱싱하고 실무 질문에 답변하는 예제
 import asyncio
 
 from llama_index.core import Settings, VectorStoreIndex
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
 
+from src.configs.llama_index import init_llama_index_settings
 from src.utils import load_pdf_from_path, create_hierarchical_index
 
 
-# LlamaIndex 전역 설정
-Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+# LlamaIndex 전역 설정 초기화
+init_llama_index_settings()
 Settings.chunk_size = 512
 Settings.chunk_overlap = 50
 

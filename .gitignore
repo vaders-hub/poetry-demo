@@ -10,3 +10,9 @@ dist
 
 # Claude temporary directories
 tmpclaude-*
+
+# Claude Code working files
+*.cwd
+
+# Documentation (moved to docs/)
+# *.md files are now managed in docs/
