@@ -27,6 +27,7 @@ from src.utils.document_analysis import (
     format_citation,
     get_exception_keywords,
     highlight_exception_sources,
+    compute_confidence_score,
 )
 
 
@@ -118,6 +119,7 @@ async def analyze_decision_reason(request: ReasonAnalysisRequest):
                 "source_references": source_references,
                 "citations": citations,
                 "total_sources_found": len(response.source_nodes),
+                "confidence_score": compute_confidence_score(response.source_nodes),
             },
             message="사유 및 근거 분석이 완료되었습니다.",
             execution_time_ms=(end_time - start_time).total_seconds() * 1000,
@@ -225,6 +227,7 @@ async def find_exception_clauses(request: ExceptionClauseRequest):
                 "highlighted_sources": highlighted_sources,
                 "all_source_references": source_references,
                 "exception_clauses_found": len(highlighted_sources),
+                "confidence_score": compute_confidence_score(response.source_nodes),
             },
             message="예외 조항 검색이 완료되었습니다.",
             execution_time_ms=(end_time - start_time).total_seconds() * 1000,
@@ -306,6 +309,7 @@ async def search_specific_clause(request: ClauseSearchRequest):
                 "search_results": str(response),
                 "source_references": source_references,
                 "total_matches": len(response.source_nodes),
+                "confidence_score": compute_confidence_score(response.source_nodes),
             },
             message="조항 검색이 완료되었습니다.",
             execution_time_ms=(end_time - start_time).total_seconds() * 1000,

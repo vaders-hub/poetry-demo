@@ -19,6 +19,7 @@ from src.utils import (
     error_response,
     ping_redis,
     load_index_from_redis,
+    compute_confidence_score,
 )
 
 
@@ -113,6 +114,7 @@ async def analyze_table_importance(request: TableImportanceRequest):
                 "top_n": request.top_n,
                 "analysis_result": str(response),
                 "source_references": references,
+                "confidence_score": compute_confidence_score(source_nodes),
                 "metadata": {
                     "total_nodes_searched": len(source_nodes),
                     "file_name": metadata.get("file_name", "Unknown"),
@@ -210,6 +212,7 @@ async def compare_table_criteria(request: TableComparisonRequest):
                 "comparison_aspect": request.comparison_aspect,
                 "comparison_result": str(response),
                 "source_references": references,
+                "confidence_score": compute_confidence_score(source_nodes),
                 "metadata": {
                     "total_nodes_searched": len(source_nodes),
                     "file_name": metadata.get("file_name", "Unknown"),

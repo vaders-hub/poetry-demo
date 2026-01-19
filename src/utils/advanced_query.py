@@ -17,6 +17,7 @@ from typing import Dict, Any, List
 from llama_index.core import Settings, VectorStoreIndex
 
 from src.utils.redis_index import load_index_from_redis
+from src.utils.document_analysis import compute_confidence_score
 
 
 # ============================================================================
@@ -95,6 +96,9 @@ async def search_tables(
     return {
         "search_type": "table",
         "answer": str(response),
+        "confidence_score": compute_confidence_score(
+            getattr(response, "source_nodes", []), top_n=3
+        ),
         "source_nodes": [
             {
                 "text_preview": (
@@ -134,6 +138,9 @@ async def search_text(
     return {
         "search_type": "text",
         "answer": str(response),
+        "confidence_score": compute_confidence_score(
+            getattr(response, "source_nodes", []), top_n=3
+        ),
         "source_nodes": [
             {
                 "text_preview": (
@@ -184,6 +191,9 @@ async def extract_json_paths(
     return {
         "search_type": "json",
         "answer": str(response),
+        "confidence_score": compute_confidence_score(
+            getattr(response, "source_nodes", []), top_n=3
+        ),
         "source_nodes": [
             {
                 "text_preview": (

@@ -9,6 +9,7 @@ from src.utils.document_analysis import (
     create_hierarchical_index,
     stream_response,
     generate_structured_query,
+    compute_confidence_score,
 )
 from src.utils.response_wrapper import (
     api_response,
@@ -52,6 +53,7 @@ __all__ = [
     "create_hierarchical_index",
     "stream_response",
     "generate_structured_query",
+    "compute_confidence_score",
     # Response Wrapper
     "api_response",
     "success_response",

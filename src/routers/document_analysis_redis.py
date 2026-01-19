@@ -25,6 +25,7 @@ from src.utils import (
     check_document_exists,
     delete_document_from_redis,
     list_all_documents,
+    compute_confidence_score,
 )
 
 
@@ -67,6 +68,7 @@ async def get_document_summary(request: SummaryRequest):
                 "summary": str(response),
                 "summary_length": len(str(response)),
                 "source_nodes_count": len(response.source_nodes),
+                "confidence_score": compute_confidence_score(response.source_nodes),
             },
             message="문서의 목적과 핵심 내용을 요약했습니다.",
             execution_time_ms=(end_time - start_time).total_seconds() * 1000,
@@ -153,6 +155,7 @@ async def extract_issues(request: IssueExtractionRequest):
                 "issues": str(response),
                 "source_nodes": source_nodes_info,
                 "total_source_nodes": len(response.source_nodes),
+                "confidence_score": compute_confidence_score(response.source_nodes),
             },
             message="문서에서 주요 이슈를 추출했습니다.",
             execution_time_ms=(end_time - start_time).total_seconds() * 1000,
@@ -210,6 +213,7 @@ async def query_document(request: QueryRequest):
                         }
                         for node in response.source_nodes
                     ],
+                    "confidence_score": compute_confidence_score(response.source_nodes),
                 },
                 message="질의응답이 완료되었습니다.",
                 execution_time_ms=(end_time - start_time).total_seconds() * 1000,

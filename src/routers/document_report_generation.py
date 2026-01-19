@@ -22,6 +22,7 @@ from src.utils import (
     ping_redis,
     load_index_from_redis,
     generate_structured_query,
+    compute_confidence_score,
 )
 
 
@@ -120,6 +121,7 @@ async def generate_report_summary(request: ReportSummaryRequest):
                 "recommendations": sections.get("recommendations", []),
                 "full_text": response_text,
                 "source_references": references,
+                "confidence_score": compute_confidence_score(source_nodes),
                 "metadata": {
                     "total_nodes_searched": len(source_nodes),
                     "file_name": metadata.get("file_name", "Unknown"),
@@ -288,6 +290,7 @@ async def generate_checklist(request: ChecklistRequest):
                 "critical_items": checklist_data.get("critical_items", []),
                 "full_text": response_text,
                 "source_references": references,
+                "confidence_score": compute_confidence_score(source_nodes),
                 "metadata": {
                     "total_nodes_searched": len(source_nodes),
                     "file_name": metadata.get("file_name", "Unknown"),
@@ -543,6 +546,7 @@ async def analyze_ambiguous_text(request: AmbiguousTextRequest):
                 "summary": ambiguous_data.get("summary", ""),
                 "full_text": response_text,
                 "source_references": references,
+                "confidence_score": compute_confidence_score(source_nodes),
                 "metadata": {
                     "total_nodes_searched": len(source_nodes),
                     "file_name": metadata.get("file_name", "Unknown"),
@@ -649,6 +653,7 @@ FAQ 작성 가이드:
                 "total_questions": len(faq_data.get("items", [])),
                 "full_text": response_text,
                 "source_references": references,
+                "confidence_score": compute_confidence_score(source_nodes),
                 "metadata": {
                     "total_nodes_searched": len(source_nodes),
                     "file_name": metadata.get("file_name", "Unknown"),

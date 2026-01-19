@@ -186,6 +186,33 @@ def extract_source_references(source_nodes: list, top_n: int = 5) -> list[dict]:
     return references
 
 
+def compute_confidence_score(source_nodes: list, top_n: int | None = None) -> float:
+    """
+    소스 노드의 유사도 점수로 간단한 confidence score 계산
+
+    Args:
+        source_nodes: 검색된 소스 노드 리스트 (NodeWithScore)
+        top_n: 상위 N개 노드만 사용 (None이면 전체 사용)
+
+    Returns:
+        0.0~1.0 범위의 평균 점수 (노드가 없으면 0.0)
+    """
+    scores = []
+    for node in source_nodes:
+        score = getattr(node, "score", None)
+        if score is not None:
+            scores.append(float(score))
+
+    if not scores:
+        return 0.0
+
+    scores.sort(reverse=True)
+    if top_n is not None:
+        scores = scores[:top_n]
+
+    return round(sum(scores) / len(scores), 4)
+
+
 def format_citation(reference: dict) -> str:
     """
     참조 정보를 인용 형식으로 변환
