@@ -9,7 +9,7 @@ class TestLLMRoutes:
     @pytest.mark.asyncio
     async def test_sync_chat(self, client: AsyncClient):
         """Test synchronous chat endpoint."""
-        with patch("src.routers.llm.chain") as mock_chain:
+        with patch("app.routers.llm.chain") as mock_chain:
             mock_chain.invoke.return_value = "Mocked response"
 
             response = await client.get(
@@ -18,13 +18,13 @@ class TestLLMRoutes:
             )
 
             assert response.status_code == 200
-            assert response.json() == "Mocked response"
+            assert response.json()["data"]["response"] == "Mocked response"
             mock_chain.invoke.assert_called_once_with({"query": "Hello, world!"})
 
     @pytest.mark.asyncio
     async def test_async_chat(self, client: AsyncClient):
         """Test asynchronous chat endpoint."""
-        with patch("src.routers.llm.chain") as mock_chain:
+        with patch("app.routers.llm.chain") as mock_chain:
             mock_chain.ainvoke = AsyncMock(return_value="Async mocked response")
 
             query_data = {
@@ -39,13 +39,13 @@ class TestLLMRoutes:
             )
 
             assert response.status_code == 200
-            assert response.json() == "Async mocked response"
+            assert response.json()["data"]["response"] == "Async mocked response"
             mock_chain.ainvoke.assert_called_once_with({"query": "Test prompt"})
 
     @pytest.mark.asyncio
     async def test_async_chat_stream(self, client: AsyncClient):
         """Test asynchronous streaming chat endpoint."""
-        with patch("src.routers.llm.client") as mock_client:
+        with patch("app.routers.llm.client") as mock_client:
             # Mock streaming response
             mock_stream = MagicMock()
             mock_event = MagicMock()
@@ -69,7 +69,7 @@ class TestLLMRoutes:
     @pytest.mark.asyncio
     async def test_async_generate_text(self, client: AsyncClient):
         """Test asynchronous text generation endpoint."""
-        with patch("src.routers.llm.client") as mock_client:
+        with patch("app.routers.llm.client") as mock_client:
             # Mock OpenAI response
             mock_response = MagicMock()
             mock_choice = MagicMock()
@@ -85,7 +85,7 @@ class TestLLMRoutes:
 
             assert response.status_code == 200
             data = response.json()
-            assert data["text"] == "Generated text content"
+            assert data["data"]["text"] == "Generated text content"
 
             mock_client.chat.completions.create.assert_called_once()
             call_kwargs = mock_client.chat.completions.create.call_args.kwargs
@@ -95,7 +95,7 @@ class TestLLMRoutes:
     @pytest.mark.asyncio
     async def test_async_generate_text_error(self, client: AsyncClient):
         """Test text generation endpoint with error."""
-        with patch("src.routers.llm.client") as mock_client:
+        with patch("app.routers.llm.client") as mock_client:
             mock_client.chat.completions.create = AsyncMock(
                 side_effect=Exception("API Error")
             )
@@ -106,12 +106,12 @@ class TestLLMRoutes:
             )
 
             assert response.status_code == 500
-            assert "API Error" in response.json()["detail"]
+            assert "API Error" in response.json()["error"]
 
     @pytest.mark.asyncio
     async def test_complete_text(self, client: AsyncClient):
         """Test text completion endpoint."""
-        with patch("src.routers.llm.llm") as mock_llm:
+        with patch("app.routers.llm.llm") as mock_llm:
             mock_llm.return_value = "Completion result"
 
             response = await client.get(
@@ -120,7 +120,7 @@ class TestLLMRoutes:
             )
 
             assert response.status_code == 200
-            assert response.json() == "Completion result"
+            assert response.json()["data"]["completion"] == "Completion result"
             mock_llm.assert_called_once_with("Complete this")
 
     @pytest.mark.asyncio
@@ -134,7 +134,7 @@ class TestLLMRoutes:
     @pytest.mark.asyncio
     async def test_multiple_llm_calls(self, client: AsyncClient):
         """Test making multiple LLM calls in sequence."""
-        with patch("src.routers.llm.chain") as mock_chain:
+        with patch("app.routers.llm.chain") as mock_chain:
             mock_chain.invoke.side_effect = ["Response 1", "Response 2", "Response 3"]
 
             queries = ["Query 1", "Query 2", "Query 3"]
@@ -148,7 +148,7 @@ class TestLLMRoutes:
                 responses.append(response.json())
 
             assert len(responses) == 3
-            assert responses[0] == "Response 1"
-            assert responses[1] == "Response 2"
-            assert responses[2] == "Response 3"
+            assert responses[0]["data"]["response"] == "Response 1"
+            assert responses[1]["data"]["response"] == "Response 2"
+            assert responses[2]["data"]["response"] == "Response 3"
             assert mock_chain.invoke.call_count == 3

@@ -12,7 +12,7 @@ class TestCustomerRoutes:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
+        assert data["status"] is True
         assert data["message"] == "customer created"
         assert data["data"]["name"] == sample_customer_data["name"]
         assert data["data"]["customer_id"] == sample_customer_data["customer_id"]
@@ -27,7 +27,7 @@ class TestCustomerRoutes:
         response = await client.post("/customer/add", json=sample_customer_data)
 
         assert response.status_code == 409
-        assert "already exists" in response.json()["detail"]
+        assert "already exists" in response.json()["message"]
 
     @pytest.mark.asyncio
     async def test_create_customer_missing_name(self, client: AsyncClient):
@@ -47,7 +47,7 @@ class TestCustomerRoutes:
         response = await client.get("/customer/list")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
     @pytest.mark.asyncio
     async def test_get_customer_list(self, client: AsyncClient, sample_customer_data):
@@ -59,7 +59,7 @@ class TestCustomerRoutes:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
+        assert data["status"] is True
         assert len(data["data"]) == 1
         assert data["data"][0]["name"] == sample_customer_data["name"]
 
@@ -74,7 +74,7 @@ class TestCustomerRoutes:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
+        assert data["status"] is True
         assert data["data"]["customer_id"] == customer_id
         assert data["data"]["name"] == sample_customer_data["name"]
 
@@ -84,7 +84,7 @@ class TestCustomerRoutes:
         response = await client.get("/customer/non-existent-id")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
     @pytest.mark.asyncio
     async def test_update_customer(self, client: AsyncClient, sample_customer_data):
@@ -101,7 +101,7 @@ class TestCustomerRoutes:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
+        assert data["status"] is True
         assert data["data"]["name"] == "Updated Customer Name"
         assert data["data"]["credit_limit"] == 20000
 
@@ -116,7 +116,7 @@ class TestCustomerRoutes:
         response = await client.put("/customer/modify", json=customer_data)
 
         assert response.status_code == 404
-        assert "does not exist" in response.json()["detail"].lower()
+        assert "does not exist" in response.json()["message"].lower()
 
     @pytest.mark.asyncio
     async def test_delete_customer(self, client: AsyncClient, sample_customer_data):
@@ -125,11 +125,11 @@ class TestCustomerRoutes:
         await client.post("/customer/add", json=sample_customer_data)
 
         # Delete the customer
-        response = await client.delete("/customer/delete", json=sample_customer_data)
+        response = await client.request("DELETE", "/customer/delete", json=sample_customer_data)
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
+        assert data["status"] is True
         assert data["message"] == "customer deleted"
 
         # Verify customer is deleted
@@ -144,10 +144,10 @@ class TestCustomerRoutes:
             "name": "Test"
         }
 
-        response = await client.delete("/customer/delete", json=customer_data)
+        response = await client.request("DELETE", "/customer/delete", json=customer_data)
 
         assert response.status_code == 404
-        assert "does not exist" in response.json()["detail"].lower()
+        assert "does not exist" in response.json()["message"].lower()
 
     @pytest.mark.asyncio
     async def test_customer_crud_workflow(self, client: AsyncClient):
@@ -176,7 +176,7 @@ class TestCustomerRoutes:
         assert update_response.json()["data"]["name"] == "Updated Workflow Customer"
 
         # 4. Delete
-        delete_response = await client.delete("/customer/delete", json=customer_data)
+        delete_response = await client.request("DELETE", "/customer/delete", json=customer_data)
         assert delete_response.status_code == 200
 
         # 5. Verify deletion

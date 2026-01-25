@@ -2,14 +2,14 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.crud.customer import (
+from app.crud.customer import (
     get_customers,
     get_customer,
     create_customer,
     update_customer,
     delete_customer,
 )
-from src.models.customer import Customer as CustomerModel
+from app.models.customer import Customer as CustomerModel
 
 
 class TestCustomerCRUD:

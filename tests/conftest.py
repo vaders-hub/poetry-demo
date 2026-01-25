@@ -7,9 +7,9 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from src.router import app
-from src.models import Base
-from src.db import get_session
+from app.router import app
+from app.models import Base
+from app.db import connect as get_session
 
 
 # Test database URL (in-memory SQLite for testing)

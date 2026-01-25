@@ -1,18 +1,28 @@
 {
-  "include": ["src"],
-  "exclude": ["**/__pycache__", "**/node_modules", "**/.*"],
-  "venvPath": "C:\\Users\\imzeo\\AppData\\Local\\pypoetry\\Cache\\virtualenvs",
-  "venv": "poetry-demo-m5W6YgvA-py3.13",
+  "include": ["app"],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    "**/.venv",
+    "**/.*",
+    "front/**"
+  ],
+  "venvPath": ",",
+  "venv": ".venv",
   "typeCheckingMode": "basic",
   "reportMissingImports": true,
   "reportMissingTypeStubs": false,
+  "reportUnusedImport": "warning",
+  "reportUnusedVariable": "warning",
+  "reportDuplicateImport": "warning",
   "pythonPlatform": "Windows",
+  "pythonVersion": "3.13",
   "executionEnvironments": [
     {
       "root": ".",
-      "python": "C:\\Users\\imzeo\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\poetry-demo-m5W6YgvA-py3.13\\Scripts\\python.exe",
       "pythonVersion": "3.13",
-      "extraPaths": ["src"]
+      "pythonPlatform": "Windows",
+      "extraPaths": ["."]
     }
   ]
 }
