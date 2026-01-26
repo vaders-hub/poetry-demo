@@ -22,9 +22,9 @@ warnings.filterwarnings(
     module="pydantic._internal._generate_schema",
 )
 
-from llama_index.core import Settings
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.core import Settings  # noqa: E402
+from llama_index.embeddings.openai import OpenAIEmbedding  # noqa: E402
+from llama_index.llms.openai import OpenAI  # noqa: E402
 
 # 기본 설정값
 DEFAULT_LLM_MODEL = "gpt-4o-mini"

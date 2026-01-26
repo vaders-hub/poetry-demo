@@ -4,11 +4,11 @@ Document Analysis 공통 유틸리티 함수
 PDF 로딩, 계층적 인덱싱, 스트리밍 등 문서 분석에 필요한 공통 함수들
 """
 
-import os
 import json
+import os
 import warnings
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import AsyncIterator
 
 # LlamaIndex 내부의 Pydantic validate_default 경고 억제
 warnings.filterwarnings(
@@ -18,10 +18,14 @@ warnings.filterwarnings(
     module="pydantic._internal._generate_schema",
 )
 
-from llama_index.core import Document, VectorStoreIndex
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.schema import TextNode, NodeRelationship, RelatedNodeInfo
-from llama_index.readers.file import PyMuPDFReader
+from llama_index.core import Document, VectorStoreIndex  # noqa: E402
+from llama_index.core.node_parser import SentenceSplitter  # noqa: E402
+from llama_index.core.schema import (  # noqa: E402
+    NodeRelationship,
+    RelatedNodeInfo,
+    TextNode,
+)
+from llama_index.readers.file import PyMuPDFReader  # noqa: E402
 
 
 async def load_pdf_from_path(pdf_path: str) -> list[Document]:

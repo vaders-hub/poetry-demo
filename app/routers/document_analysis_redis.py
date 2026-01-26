@@ -11,23 +11,21 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.models import (
+    IssueExtractionRequest,
     QueryRequest,
     SummaryRequest,
-    IssueExtractionRequest,
 )
 from app.utils import (
+    check_document_exists,
+    compute_confidence_score,
+    delete_document_from_redis,
+    error_response,
+    get_redis_client,
+    list_all_documents,
+    load_index_from_redis,
     stream_response,
     success_response,
-    error_response,
-    ping_redis,
-    get_redis_client,
-    load_index_from_redis,
-    check_document_exists,
-    delete_document_from_redis,
-    list_all_documents,
-    compute_confidence_score,
 )
-
 
 router = APIRouter(
     prefix="/document-analysis-redis", tags=["Document Analysis (Redis)"]
@@ -109,9 +107,9 @@ async def get_document_summary_streaming(request: SummaryRequest):
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/extract-issues")
@@ -139,7 +137,9 @@ async def extract_issues(request: IssueExtractionRequest):
         source_nodes_info = [
             {
                 "score": node.score,
-                "text_preview": getattr(node.node, "text", "")[:200] + "..." if len(getattr(node.node, "text", "")) > 200 else getattr(node.node, "text", ""),  # type: ignore[attr-defined]
+                "text_preview": getattr(node.node, "text", "")[:200] + "..."
+                if len(getattr(node.node, "text", "")) > 200
+                else getattr(node.node, "text", ""),  # type: ignore[attr-defined]
             }
             for node in sorted(
                 response.source_nodes, key=lambda x: x.score or 0.0, reverse=True
@@ -209,7 +209,8 @@ async def query_document(request: QueryRequest):
                     "source_nodes": [
                         {
                             "score": node.score,
-                            "text_preview": getattr(node.node, "text", "")[:200] + "...",  # type: ignore
+                            "text_preview": getattr(node.node, "text", "")[:200]
+                            + "...",  # type: ignore
                         }
                         for node in response.source_nodes
                     ],

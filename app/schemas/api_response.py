@@ -1,9 +1,7 @@
-from typing import Optional
-
 from pydantic import BaseModel
 
 
 class APIRESPONSE(BaseModel):
-    status: Optional[bool] = None
-    message: Optional[str] = None
-    error: Optional[int] = None
+    status: bool | None = None
+    message: str | None = None
+    error: int | None = None

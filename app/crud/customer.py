@@ -1,8 +1,10 @@
-from app.models import Customer as CustomerDBModel
-from app.schemas.customer import Customer as CustomerSchema
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models import Customer as CustomerDBModel
+from app.schemas.customer import Customer as CustomerSchema
+
 
 async def get_customers(db_session: AsyncSession):
     stmt = select(CustomerDBModel)
@@ -14,6 +16,7 @@ async def get_customers(db_session: AsyncSession):
 
     return [CustomerSchema.model_validate(c) for c in customers]
 
+
 async def get_customer(db_session: AsyncSession, customer_id: str):
     stmt = select(CustomerDBModel).where(CustomerDBModel.customer_id == customer_id)
     result = await db_session.execute(stmt)
@@ -24,6 +27,7 @@ async def get_customer(db_session: AsyncSession, customer_id: str):
         raise HTTPException(status_code=404, detail="Customer not found")
 
     return CustomerSchema.model_validate(customer)
+
 
 async def create_customer(db_session: AsyncSession, customer: CustomerSchema):
     cid = customer.customer_id
@@ -42,7 +46,7 @@ async def create_customer(db_session: AsyncSession, customer: CustomerSchema):
             name=cname,
             address=customer.address,
             website=customer.website,
-            credit_limit=customer.credit_limit
+            credit_limit=customer.credit_limit,
         )
         db_session.add(new_user)
         await db_session.commit()
@@ -74,6 +78,7 @@ async def update_customer(db_session: AsyncSession, customer: CustomerSchema):
         return CustomerSchema.model_validate(customer_exist)
     else:
         raise HTTPException(status_code=404, detail="Customer does not exist")
+
 
 async def delete_customer(db_session: AsyncSession, customer: CustomerSchema):
     cid = customer.customer_id

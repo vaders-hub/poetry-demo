@@ -4,19 +4,19 @@ LCEL (LangChain Expression Language) 패턴 학습 예제
 이 모듈은 LangChain의 선언적 문법(LCEL)을 다양한 패턴으로 보여줍니다.
 독립 실행 가능한 스크립트입니다.
 """
+
 import asyncio
 import os
 from datetime import datetime
-from typing import List, Dict, Any
 
 from dotenv import load_dotenv
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import (
-    RunnablePassthrough,
+    RunnableBranch,
     RunnableLambda,
     RunnableParallel,
-    RunnableBranch
+    RunnablePassthrough,
 )
 from langchain_openai import ChatOpenAI
 
@@ -28,18 +28,20 @@ load_dotenv()
 # LLM 초기화
 # ============================================================================
 
+
 def get_llm(temperature: float = 0.7):
     """OpenAI LLM 인스턴스 생성"""
     return ChatOpenAI(
         model="gpt-4o-mini",
         temperature=temperature,
-        openai_api_key=os.getenv("OPENAI_API_KEY")
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
     )
 
 
 # ============================================================================
 # Pattern 1: 기본 체인 (Prompt | LLM | Parser)
 # ============================================================================
+
 
 async def pattern_1_basic_chain():
     """
@@ -54,9 +56,7 @@ async def pattern_1_basic_chain():
     llm = get_llm()
 
     # 체인 구성
-    prompt = ChatPromptTemplate.from_template(
-        "Tell me a short joke about {topic}"
-    )
+    prompt = ChatPromptTemplate.from_template("Tell me a short joke about {topic}")
     chain = prompt | llm | StrOutputParser()
 
     # 실행
@@ -70,6 +70,7 @@ async def pattern_1_basic_chain():
 # Pattern 2: RunnablePassthrough - 데이터 전달
 # ============================================================================
 
+
 async def pattern_2_passthrough():
     """
     RunnablePassthrough를 사용한 데이터 전달
@@ -80,20 +81,17 @@ async def pattern_2_passthrough():
     print("Pattern 2: RunnablePassthrough")
     print("=" * 70)
 
-    llm = get_llm()
-
     # 입력 데이터를 여러 형태로 전달
-    chain = (
-        {
-            "original": RunnablePassthrough(),
-            "uppercase": RunnableLambda(lambda x: x.upper()),
-            "length": RunnableLambda(lambda x: len(x))
-        }
-        | RunnableLambda(lambda x: (
+    chain = {
+        "original": RunnablePassthrough(),
+        "uppercase": RunnableLambda(lambda x: x.upper()),
+        "length": RunnableLambda(lambda x: len(x)),
+    } | RunnableLambda(
+        lambda x: (
             f"Original: {x['original']}\n"
             f"Uppercase: {x['uppercase']}\n"
             f"Length: {x['length']}"
-        ))
+        )
     )
 
     result = await chain.ainvoke("hello world")
@@ -105,6 +103,7 @@ async def pattern_2_passthrough():
 # ============================================================================
 # Pattern 3: RunnableParallel - 병렬 실행
 # ============================================================================
+
 
 async def pattern_3_parallel():
     """
@@ -121,29 +120,29 @@ async def pattern_3_parallel():
     # 각기 다른 분석을 병렬로 수행
     text = "Python is a great programming language for beginners and experts alike."
 
-    parallel_chain = RunnableParallel({
-        "sentiment": (
-            ChatPromptTemplate.from_template(
-                "What is the sentiment (positive/negative/neutral) of: {text}"
-            )
-            | llm
-            | StrOutputParser()
-        ),
-        "keywords": (
-            ChatPromptTemplate.from_template(
-                "Extract 3 keywords from: {text}"
-            )
-            | llm
-            | StrOutputParser()
-        ),
-        "language": (
-            ChatPromptTemplate.from_template(
-                "What programming language is mentioned in: {text}"
-            )
-            | llm
-            | StrOutputParser()
-        )
-    })
+    parallel_chain = RunnableParallel(
+        {
+            "sentiment": (
+                ChatPromptTemplate.from_template(
+                    "What is the sentiment (positive/negative/neutral) of: {text}"
+                )
+                | llm
+                | StrOutputParser()
+            ),
+            "keywords": (
+                ChatPromptTemplate.from_template("Extract 3 keywords from: {text}")
+                | llm
+                | StrOutputParser()
+            ),
+            "language": (
+                ChatPromptTemplate.from_template(
+                    "What programming language is mentioned in: {text}"
+                )
+                | llm
+                | StrOutputParser()
+            ),
+        }
+    )
 
     start = datetime.now()
     result = await parallel_chain.ainvoke({"text": text})
@@ -160,6 +159,7 @@ async def pattern_3_parallel():
 # ============================================================================
 # Pattern 4: RunnableLambda - 커스텀 로직
 # ============================================================================
+
 
 async def pattern_4_lambda():
     """
@@ -179,7 +179,7 @@ async def pattern_4_lambda():
         return {
             "text": text,
             "word_count": len(words),
-            "has_numbers": any(char.isdigit() for char in text)
+            "has_numbers": any(char.isdigit() for char in text),
         }
 
     # 후처리 함수
@@ -187,7 +187,7 @@ async def pattern_4_lambda():
         return {
             "response": result,
             "length": len(result),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     # 체인 구성
@@ -214,6 +214,7 @@ async def pattern_4_lambda():
 # ============================================================================
 # Pattern 5: RunnableBranch - 조건부 실행
 # ============================================================================
+
 
 async def pattern_5_branch():
     """
@@ -255,14 +256,14 @@ async def pattern_5_branch():
     branch = RunnableBranch(
         (is_short, short_chain),
         (is_medium, medium_chain),
-        long_chain  # default
+        long_chain,  # default
     )
 
     # 테스트
     texts = [
         "Hi",
         "What is Python?",
-        "Explain the difference between synchronous and asynchronous programming in Python"
+        "Explain the difference between synchronous and asynchronous programming in Python",
     ]
 
     for text in texts:
@@ -276,6 +277,7 @@ async def pattern_5_branch():
 # ============================================================================
 # Pattern 6: 체인 조합 (Chaining Chains)
 # ============================================================================
+
 
 async def pattern_6_chain_composition():
     """
@@ -300,18 +302,14 @@ async def pattern_6_chain_composition():
 
     # Step 2: 주제에 대한 질문 생성
     question_chain = (
-        ChatPromptTemplate.from_template(
-            "Generate a technical question about: {topic}"
-        )
+        ChatPromptTemplate.from_template("Generate a technical question about: {topic}")
         | llm
         | StrOutputParser()
     )
 
     # Step 3: 질문에 답변
     answer_chain = (
-        ChatPromptTemplate.from_template(
-            "Answer this question: {question}"
-        )
+        ChatPromptTemplate.from_template("Answer this question: {question}")
         | llm
         | StrOutputParser()
     )
@@ -336,6 +334,7 @@ async def pattern_6_chain_composition():
 # ============================================================================
 # Pattern 7: 맵 리듀스 패턴
 # ============================================================================
+
 
 async def pattern_7_map_reduce():
     """
@@ -362,15 +361,14 @@ async def pattern_7_map_reduce():
         "User authentication",
         "Data caching",
         "Error logging",
-        "API documentation"
+        "API documentation",
     ]
 
     # 병렬로 각 feature 분석
     print("Analyzing features in parallel...")
-    analyses = await asyncio.gather(*[
-        analyze_chain.ainvoke({"feature": f})
-        for f in features
-    ])
+    analyses = await asyncio.gather(
+        *[analyze_chain.ainvoke({"feature": f}) for f in features]
+    )
 
     # Reduce: 결과 합치기
     reduce_prompt = ChatPromptTemplate.from_template(
@@ -378,10 +376,9 @@ async def pattern_7_map_reduce():
     )
     reduce_chain = reduce_prompt | llm | StrOutputParser()
 
-    combined = "\n".join([
-        f"{feat}: {analysis}"
-        for feat, analysis in zip(features, analyses)
-    ])
+    combined = "\n".join(
+        [f"{feat}: {analysis}" for feat, analysis in zip(features, analyses, strict=True)]
+    )
 
     summary = await reduce_chain.ainvoke({"analyses": combined})
 
@@ -395,6 +392,7 @@ async def pattern_7_map_reduce():
 # Pattern 8: 스트리밍
 # ============================================================================
 
+
 async def pattern_8_streaming():
     """
     스트리밍 패턴
@@ -407,9 +405,7 @@ async def pattern_8_streaming():
 
     llm = get_llm()
 
-    prompt = ChatPromptTemplate.from_template(
-        "Write a short story about {topic}"
-    )
+    prompt = ChatPromptTemplate.from_template("Write a short story about {topic}")
     chain = prompt | llm | StrOutputParser()
 
     print("Streaming response:")
@@ -429,6 +425,7 @@ async def pattern_8_streaming():
 # Pattern 9: 배치 처리
 # ============================================================================
 
+
 async def pattern_9_batch():
     """
     배치 처리 패턴
@@ -441,18 +438,10 @@ async def pattern_9_batch():
 
     llm = get_llm()
 
-    prompt = ChatPromptTemplate.from_template(
-        "Categorize this: {item}"
-    )
+    prompt = ChatPromptTemplate.from_template("Categorize this: {item}")
     chain = prompt | llm | StrOutputParser()
 
-    items = [
-        "Python",
-        "PostgreSQL",
-        "React",
-        "Docker",
-        "FastAPI"
-    ]
+    items = ["Python", "PostgreSQL", "React", "Docker", "FastAPI"]
 
     print(f"Processing {len(items)} items in batch...")
 
@@ -460,7 +449,7 @@ async def pattern_9_batch():
     results = await chain.abatch([{"item": item} for item in items])
     elapsed = (datetime.now() - start).total_seconds()
 
-    for item, result in zip(items, results):
+    for item, result in zip(items, results, strict=True):
         print(f"{item}: {result}")
 
     print(f"\nBatch processing took: {elapsed:.2f}s")
@@ -471,6 +460,7 @@ async def pattern_9_batch():
 # ============================================================================
 # Pattern 10: 복잡한 워크플로우
 # ============================================================================
+
 
 async def pattern_10_complex_workflow():
     """
@@ -488,29 +478,25 @@ async def pattern_10_complex_workflow():
     topic = "FastAPI best practices"
 
     # 1. 병렬로 다양한 관점 생성
-    perspectives = await RunnableParallel({
-        "technical": (
-            ChatPromptTemplate.from_template(
-                "Technical aspects of: {topic}"
-            )
-            | llm
-            | StrOutputParser()
-        ),
-        "beginner": (
-            ChatPromptTemplate.from_template(
-                "Beginner tips for: {topic}"
-            )
-            | llm
-            | StrOutputParser()
-        ),
-        "advanced": (
-            ChatPromptTemplate.from_template(
-                "Advanced techniques for: {topic}"
-            )
-            | llm
-            | StrOutputParser()
-        )
-    }).ainvoke({"topic": topic})
+    perspectives = await RunnableParallel(
+        {
+            "technical": (
+                ChatPromptTemplate.from_template("Technical aspects of: {topic}")
+                | llm
+                | StrOutputParser()
+            ),
+            "beginner": (
+                ChatPromptTemplate.from_template("Beginner tips for: {topic}")
+                | llm
+                | StrOutputParser()
+            ),
+            "advanced": (
+                ChatPromptTemplate.from_template("Advanced techniques for: {topic}")
+                | llm
+                | StrOutputParser()
+            ),
+        }
+    ).ainvoke({"topic": topic})
 
     print(f"Topic: {topic}\n")
     print(f"Technical: {perspectives['technical'][:100]}...")
@@ -535,6 +521,7 @@ async def pattern_10_complex_workflow():
 # ============================================================================
 # 메인 실행 함수
 # ============================================================================
+
 
 async def run_all_patterns():
     """모든 패턴 실행"""

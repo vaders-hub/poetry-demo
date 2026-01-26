@@ -4,7 +4,8 @@ API Response Wrapper
 모든 API 응답을 일관된 형식으로 래핑하는 유틸리티
 """
 
-from typing import Any, Generic, Optional, TypeVar, Dict
+from typing import Any, Generic, TypeVar
+
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -13,24 +14,27 @@ T = TypeVar("T")
 
 class ResponseData(BaseModel, Generic[T]):
     """표준 API 응답 모델"""
-    data: Optional[T] = Field(default=None, description="응답 데이터")
+
+    data: T | None = Field(default=None, description="응답 데이터")
     message: str = Field(default="Success", description="응답 메시지")
     status: bool = Field(default=True, description="성공 여부")
-    error: Optional[Any] = Field(default=None, description="에러 정보")
+    error: Any | None = Field(default=None, description="에러 정보")
 
     # 추가 메타데이터 (선택사항)
-    execution_time_ms: Optional[float] = Field(default=None, description="실행 시간 (밀리초)")
-    metadata: Optional[Dict[str, Any]] = Field(default=None, description="추가 메타데이터")
+    execution_time_ms: float | None = Field(
+        default=None, description="실행 시간 (밀리초)"
+    )
+    metadata: dict[str, Any] | None = Field(default=None, description="추가 메타데이터")
 
 
 def api_response(
-    data: Optional[Any] = None,
+    data: Any | None = None,
     message: str = "Success",
     status: bool = True,
     status_code: int = 200,
-    error: Optional[Any] = None,
-    execution_time_ms: Optional[float] = None,
-    metadata: Optional[Dict[str, Any]] = None,
+    error: Any | None = None,
+    execution_time_ms: float | None = None,
+    metadata: dict[str, Any] | None = None,
 ):
     """
     API 응답 래퍼 함수
@@ -73,10 +77,10 @@ def api_response(
 
 
 def success_response(
-    data: Optional[Any] = None,
+    data: Any | None = None,
     message: str = "Success",
-    execution_time_ms: Optional[float] = None,
-    metadata: Optional[Dict[str, Any]] = None,
+    execution_time_ms: float | None = None,
+    metadata: dict[str, Any] | None = None,
 ):
     """성공 응답 헬퍼 (200 OK)"""
     return api_response(
@@ -90,9 +94,9 @@ def success_response(
 
 
 def created_response(
-    data: Optional[Any] = None,
+    data: Any | None = None,
     message: str = "Created",
-    execution_time_ms: Optional[float] = None,
+    execution_time_ms: float | None = None,
 ):
     """생성 성공 응답 (201 Created)"""
     return api_response(
@@ -106,7 +110,7 @@ def created_response(
 
 def error_response(
     message: str = "Error",
-    error: Optional[Any] = None,
+    error: Any | None = None,
     status_code: int = 500,
 ):
     """에러 응답 헬퍼"""

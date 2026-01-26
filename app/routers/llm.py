@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 from datetime import datetime
 
-from app.main import client, llm, chain
-from app.utils import success_response, error_response
+from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+
+from app.main import chain, client, llm
+from app.utils import error_response, success_response
 
 
 class Query(BaseModel):
@@ -61,6 +62,7 @@ async def async_chat(query: Query):
 @router.get("/async/chat-stream")
 async def async_chat_stream(query: str):
     """스트리밍 채팅 (OpenAI)"""
+
     def event_generator():
         with client.chat.completions.stream(
             model="gpt-4o-mini",

@@ -5,14 +5,14 @@ Provides tools for database operations and text processing
 
 import asyncio
 from typing import Any
+
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent
+from mcp.types import TextContent, Tool
 
 from app.config import setting
+from app.crud.customer import get_customer, get_customers
 from app.db import DatabaseSessionManager
-from app.crud.customer import get_customers, get_customer
-
 
 # Initialize MCP server
 app = Server("poetry-demo-mcp-server")
@@ -25,11 +25,7 @@ async def list_tools() -> list[Tool]:
         Tool(
             name="get_all_customers",
             description="Get all customers from the database",
-            inputSchema={
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
+            inputSchema={"type": "object", "properties": {}, "required": []},
         ),
         Tool(
             name="get_customer_by_id",
@@ -39,11 +35,11 @@ async def list_tools() -> list[Tool]:
                 "properties": {
                     "customer_id": {
                         "type": "string",
-                        "description": "The unique identifier of the customer"
+                        "description": "The unique identifier of the customer",
                     }
                 },
-                "required": ["customer_id"]
-            }
+                "required": ["customer_id"],
+            },
         ),
         Tool(
             name="calculate",
@@ -54,19 +50,13 @@ async def list_tools() -> list[Tool]:
                     "operation": {
                         "type": "string",
                         "enum": ["add", "subtract", "multiply", "divide"],
-                        "description": "The arithmetic operation to perform"
+                        "description": "The arithmetic operation to perform",
                     },
-                    "a": {
-                        "type": "number",
-                        "description": "First number"
-                    },
-                    "b": {
-                        "type": "number",
-                        "description": "Second number"
-                    }
+                    "a": {"type": "number", "description": "First number"},
+                    "b": {"type": "number", "description": "Second number"},
                 },
-                "required": ["operation", "a", "b"]
-            }
+                "required": ["operation", "a", "b"],
+            },
         ),
         Tool(
             name="text_stats",
@@ -74,13 +64,10 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "text": {
-                        "type": "string",
-                        "description": "The text to analyze"
-                    }
+                    "text": {"type": "string", "description": "The text to analyze"}
                 },
-                "required": ["text"]
-            }
+                "required": ["text"],
+            },
         ),
     ]
 
@@ -107,10 +94,7 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
         return handle_text_stats(text)
 
     else:
-        return [TextContent(
-            type="text",
-            text=f"Unknown tool: {name}"
-        )]
+        return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
 
 async def handle_get_all_customers() -> list[TextContent]:
@@ -132,10 +116,7 @@ async def handle_get_all_customers() -> list[TextContent]:
             return [TextContent(type="text", text=result)]
 
     except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"Error retrieving customers: {str(e)}"
-        )]
+        return [TextContent(type="text", text=f"Error retrieving customers: {str(e)}")]
 
 
 async def handle_get_customer_by_id(customer_id: str) -> list[TextContent]:
@@ -147,7 +128,7 @@ async def handle_get_customer_by_id(customer_id: str) -> list[TextContent]:
         async with db_manager.session() as session:
             customer = await get_customer(session, customer_id)
 
-            result = f"Customer Details:\n"
+            result = "Customer Details:\n"
             result += f"ID: {customer.customer_id}\n"
             result += f"Name: {customer.name}\n"
             result += f"Address: {customer.address or 'N/A'}\n"
@@ -157,10 +138,11 @@ async def handle_get_customer_by_id(customer_id: str) -> list[TextContent]:
             return [TextContent(type="text", text=result)]
 
     except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"Error retrieving customer {customer_id}: {str(e)}"
-        )]
+        return [
+            TextContent(
+                type="text", text=f"Error retrieving customer {customer_id}: {str(e)}"
+            )
+        ]
 
 
 def handle_calculate(operation: str, a: float, b: float) -> list[TextContent]:
@@ -174,27 +156,17 @@ def handle_calculate(operation: str, a: float, b: float) -> list[TextContent]:
             result = a * b
         elif operation == "divide":
             if b == 0:
-                return [TextContent(
-                    type="text",
-                    text="Error: Division by zero"
-                )]
+                return [TextContent(type="text", text="Error: Division by zero")]
             result = a / b
         else:
-            return [TextContent(
-                type="text",
-                text=f"Unknown operation: {operation}"
-            )]
+            return [TextContent(type="text", text=f"Unknown operation: {operation}")]
 
-        return [TextContent(
-            type="text",
-            text=f"{a} {operation} {b} = {result}"
-        )]
+        return [TextContent(type="text", text=f"{a} {operation} {b} = {result}")]
 
     except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"Error performing calculation: {str(e)}"
-        )]
+        return [
+            TextContent(type="text", text=f"Error performing calculation: {str(e)}")
+        ]
 
 
 def handle_text_stats(text: str) -> list[TextContent]:
@@ -213,31 +185,24 @@ def handle_text_stats(text: str) -> list[TextContent]:
         # Most common characters
         top_chars = sorted(char_freq.items(), key=lambda x: x[1], reverse=True)[:5]
 
-        result = f"Text Statistics:\n"
+        result = "Text Statistics:\n"
         result += f"Characters: {char_count}\n"
         result += f"Words: {word_count}\n"
         result += f"Lines: {line_count}\n"
-        result += f"\nMost common characters:\n"
+        result += "\nMost common characters:\n"
         for char, count in top_chars:
             result += f"  '{char}': {count}\n"
 
         return [TextContent(type="text", text=result)]
 
     except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"Error analyzing text: {str(e)}"
-        )]
+        return [TextContent(type="text", text=f"Error analyzing text: {str(e)}")]
 
 
 async def main():
     """Run the MCP server."""
     async with stdio_server() as (read_stream, write_stream):
-        await app.run(
-            read_stream,
-            write_stream,
-            app.create_initialization_options()
-        )
+        await app.run(read_stream, write_stream, app.create_initialization_options())
 
 
 if __name__ == "__main__":

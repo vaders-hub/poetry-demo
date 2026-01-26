@@ -16,7 +16,7 @@ import json
 import logging
 import warnings
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Any
 
 # LlamaIndex 내부의 Pydantic validate_default 경고 억제
 warnings.filterwarnings(
@@ -26,15 +26,15 @@ warnings.filterwarnings(
     module="pydantic._internal._generate_schema",
 )
 
-from llama_index.core import VectorStoreIndex
-from llama_index.core.schema import TextNode
+from llama_index.core import VectorStoreIndex  # noqa: E402
+from llama_index.core.schema import TextNode  # noqa: E402
 
-from app.utils.redis_client import get_redis_client
+from app.utils.redis_client import get_redis_client  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
 
-def _serialize_nodes(index: VectorStoreIndex) -> List[Dict[str, Any]]:
+def _serialize_nodes(index: VectorStoreIndex) -> list[dict[str, Any]]:
     """
     VectorStoreIndex에서 노드 데이터 추출 및 직렬화
 
@@ -48,11 +48,12 @@ def _serialize_nodes(index: VectorStoreIndex) -> List[Dict[str, Any]]:
     logger.debug(f"docstore에서 {len(all_node_ids)}개 노드 ID 추출")
 
     # vector store에서 임베딩 딕셔너리 가져오기
-    embedding_dict: Dict[str, Any] = {}
+    embedding_dict: dict[str, Any] = {}
     try:
         vector_store = index.storage_context.vector_store
         if hasattr(vector_store, "_data") and hasattr(
-            vector_store._data, "embedding_dict"  # type: ignore[attr-defined]
+            vector_store._data,
+            "embedding_dict",  # type: ignore[attr-defined]
         ):
             embedding_dict = vector_store._data.embedding_dict  # type: ignore[attr-defined]
             logger.debug(f"임베딩 딕셔너리: {len(embedding_dict)}개")
@@ -62,7 +63,7 @@ def _serialize_nodes(index: VectorStoreIndex) -> List[Dict[str, Any]]:
     for i, node_id in enumerate(all_node_ids):
         node = docstore.get_node(node_id)
 
-        node_dict: Dict[str, Any] = {
+        node_dict: dict[str, Any] = {
             "id_": node.node_id,
             "text": node.get_content(),
             "metadata": node.metadata,
@@ -85,7 +86,7 @@ def _serialize_nodes(index: VectorStoreIndex) -> List[Dict[str, Any]]:
     return nodes_data
 
 
-def _deserialize_nodes(nodes_data: List[Dict[str, Any]]) -> List[TextNode]:
+def _deserialize_nodes(nodes_data: list[dict[str, Any]]) -> list[TextNode]:
     """
     직렬화된 노드 데이터로부터 TextNode 리스트 복원
     """
@@ -106,8 +107,8 @@ def _deserialize_nodes(nodes_data: List[Dict[str, Any]]) -> List[TextNode]:
 async def save_index_to_redis(
     doc_id: str,
     index: VectorStoreIndex,
-    metadata: Dict[str, Any],
-    ttl_seconds: Optional[int] = None,
+    metadata: dict[str, Any],
+    ttl_seconds: int | None = None,
 ) -> None:
     """
     인덱스를 Redis에 저장
@@ -188,7 +189,7 @@ async def save_index_to_redis(
 
 async def load_index_from_redis(
     doc_id: str,
-) -> tuple[VectorStoreIndex, Dict[str, Any]]:
+) -> tuple[VectorStoreIndex, dict[str, Any]]:
     """
     Redis에서 인덱스 로드
 
@@ -232,7 +233,7 @@ async def load_index_from_redis(
     index = VectorStoreIndex(nodes=nodes)
 
     # 메타데이터 파싱
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, Any] = {}
     if metadata_bytes:
         metadata = json.loads(metadata_bytes.decode("utf-8"))
 
@@ -269,7 +270,7 @@ async def delete_document_from_redis(doc_id: str) -> bool:
     return result > 0  # type: ignore
 
 
-async def list_all_documents() -> list[Dict[str, Any]]:
+async def list_all_documents() -> list[dict[str, Any]]:
     """
     Redis에 저장된 모든 문서 목록 조회
 
@@ -287,7 +288,7 @@ async def list_all_documents() -> list[Dict[str, Any]]:
         if cursor == 0:
             break
 
-    documents: list[Dict[str, Any]] = []
+    documents: list[dict[str, Any]] = []
     for key in keys:
         doc_id = key.decode("utf-8").replace("doc:", "")
         metadata_bytes = await client.hget(key, "metadata")  # type: ignore

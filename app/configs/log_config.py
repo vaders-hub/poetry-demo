@@ -5,7 +5,6 @@ from loguru import logger
 
 
 class InterceptHandler(logging.Handler):
-
     def emit(self, record):
         try:
             level = logger.level(record.levelname).name

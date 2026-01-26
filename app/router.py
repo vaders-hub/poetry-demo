@@ -2,25 +2,25 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles  # 사용자에게 정적 파일을 제공
 
-from app.db import sessionmanager
 from app.configs.llama_index import init_llama_index_settings
-
-from app.routers import customers
-from app.routers import users
-from app.routers import llm
-from app.routers import rag
-from app.routers import mcp
-from app.routers import lcel_examples
-from app.routers import llamaindex_examples
-from app.routers import document_analysis
-from app.routers import document_upload
-from app.routers import document_analysis_redis
-from app.routers import document_clause_analysis
-from app.routers import document_table_analysis
-from app.routers import document_report_generation
-from app.routers import document_advanced_query
+from app.db import sessionmanager
+from app.routers import (
+    customers,
+    document_advanced_query,
+    document_analysis,
+    document_analysis_redis,
+    document_clause_analysis,
+    document_report_generation,
+    document_table_analysis,
+    document_upload,
+    lcel_examples,
+    llamaindex_examples,
+    llm,
+    mcp,
+    rag,
+    users,
+)
 
 
 @asynccontextmanager
@@ -71,3 +71,9 @@ app.include_router(document_advanced_query.router)
 @app.get("/", tags=["root"])
 async def read_root() -> dict:
     return {"message": "Welcome to your todo list."}
+
+
+@app.get("/health", tags=["health"])
+async def health_check() -> dict:
+    """Health check endpoint for Docker and load balancer."""
+    return {"status": "healthy"}

@@ -1,6 +1,7 @@
 import os
-from pydantic_settings import BaseSettings
+
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
 
 load_dotenv()
 
@@ -25,11 +26,12 @@ class Settings(BaseSettings):
     log_level: str = "DEBUG"
 
     # LLM configuration
-    temperature: int = 0
+    temperature: float = 0.0
     model_name: str = "gpt-4o-mini"
     openai_api_key: str = os.getenv("OPENAI_API_KEY")
 
-setting = Settings() # type: ignore
+
+setting = Settings()  # type: ignore
 
 if not setting.openai_api_key:
     raise ValueError("OPENAI_API_KEY not found in environment variables")

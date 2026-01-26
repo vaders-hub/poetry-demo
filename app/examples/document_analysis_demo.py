@@ -11,8 +11,7 @@ import asyncio
 from llama_index.core import Settings, VectorStoreIndex
 
 from app.configs.llama_index import init_llama_index_settings
-from app.utils import load_pdf_from_path, create_hierarchical_index
-
+from app.utils import create_hierarchical_index, load_pdf_from_path
 
 # LlamaIndex 전역 설정 초기화
 init_llama_index_settings()

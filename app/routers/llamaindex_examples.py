@@ -4,35 +4,30 @@ LlamaIndex Hierarchical Indexing Examples Router
 이 모듈은 LlamaIndex를 사용하여 복잡한 문서 구조(Table, JSON)를 계층적으로 인덱싱하는 방법을 학습하기 위한 예제들을 제공합니다.
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
 import json
-import asyncio
 from datetime import datetime
-import pandas as pd
 from io import StringIO
+from typing import Any
 
+import pandas as pd
+from fastapi import APIRouter, HTTPException
 from llama_index.core import (
     Document,
-    VectorStoreIndex,
-    SummaryIndex,
-    TreeIndex,
     KeywordTableIndex,
     Settings,
+    SummaryIndex,
+    VectorStoreIndex,
 )
 from llama_index.core.node_parser import (
-    SimpleNodeParser,
     HierarchicalNodeParser,
     SentenceSplitter,
 )
-from llama_index.core.schema import TextNode, NodeRelationship, RelatedNodeInfo
-from llama_index.core.query_engine import RouterQueryEngine
+from llama_index.core.query_engine import RetrieverQueryEngine, RouterQueryEngine
+from llama_index.core.retrievers import RecursiveRetriever
+from llama_index.core.schema import NodeRelationship, RelatedNodeInfo, TextNode
 from llama_index.core.selectors import LLMSingleSelector
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
-from llama_index.core.retrievers import RecursiveRetriever
-from llama_index.core.query_engine import RetrieverQueryEngine
+from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/llamaindex", tags=["LlamaIndex Examples"])
 
@@ -66,7 +61,7 @@ class QueryRequest(BaseModel):
 class JSONDocumentRequest(BaseModel):
     """JSON 문서 요청"""
 
-    json_data: Dict[str, Any] = Field(description="JSON 데이터")
+    json_data: dict[str, Any] = Field(description="JSON 데이터")
     doc_id: str = Field(description="문서 ID")
 
 
@@ -80,14 +75,14 @@ class TableDataRequest(BaseModel):
 class HierarchicalDocRequest(BaseModel):
     """계층적 문서 요청"""
 
-    sections: List[Dict[str, Any]] = Field(description="섹션 목록")
+    sections: list[dict[str, Any]] = Field(description="섹션 목록")
     doc_id: str = Field(description="문서 ID")
 
 
 class MultiDocumentRequest(BaseModel):
     """다중 문서 요청"""
 
-    documents: List[Dict[str, str]] = Field(
+    documents: list[dict[str, str]] = Field(
         description="문서 목록 (id, text, metadata)"
     )
     index_id: str = Field(description="인덱스 ID")
@@ -135,7 +130,7 @@ async def create_basic_vector_index(request: DocumentRequest):
             "explanation": "Basic vector index created using embeddings",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -190,7 +185,7 @@ async def query_vector_index(request: QueryRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -260,7 +255,7 @@ async def create_hierarchical_index(request: HierarchicalDocRequest):
             "explanation": "Hierarchical index with 3 levels: 2048 -> 512 -> 128 chunks",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -279,7 +274,7 @@ async def create_json_index(request: JSONDocumentRequest):
         start_time = datetime.now()
 
         # JSON을 텍스트로 변환하는 헬퍼 함수
-        def json_to_text(data: Any, prefix: str = "") -> List[str]:
+        def json_to_text(data: Any, prefix: str = "") -> list[str]:
             """JSON을 계층적 텍스트로 변환"""
             texts = []
 
@@ -348,7 +343,7 @@ async def create_json_index(request: JSONDocumentRequest):
             "explanation": "JSON data flattened and indexed with hierarchical field paths",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -433,7 +428,7 @@ async def create_table_index(request: TableDataRequest):
             "explanation": "Table indexed with row nodes, column summaries, and table summary",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -523,7 +518,7 @@ async def create_multi_index(request: MultiDocumentRequest):
             "explanation": "Created multiple index types with router for automatic selection",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -568,7 +563,7 @@ async def query_router_index(request: QueryRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -630,7 +625,7 @@ async def query_with_recursive_retriever(request: QueryRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -722,7 +717,7 @@ async def create_custom_node_index(request: HierarchicalDocRequest):
             "explanation": "Custom parent-child relationships with manual node creation",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================

@@ -13,7 +13,7 @@ Created: 2026-01-16
 import asyncio
 import warnings
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 
 # LlamaIndex 내부의 Pydantic validate_default 경고 억제
 warnings.filterwarnings(
@@ -23,18 +23,17 @@ warnings.filterwarnings(
     module="pydantic._internal._generate_schema",
 )
 
-from llama_index.core import Settings, VectorStoreIndex
+from llama_index.core import Settings, VectorStoreIndex  # noqa: E402
 
-from app.utils.redis_index import load_index_from_redis
-from app.utils.document_analysis import compute_confidence_score
-
+from app.utils.document_analysis import compute_confidence_score  # noqa: E402
+from app.utils.redis_index import load_index_from_redis  # noqa: E402
 
 # ============================================================================
 # 파싱 함수
 # ============================================================================
 
 
-def parse_decomposed_queries(response_text: str) -> Dict[str, Any]:
+def parse_decomposed_queries(response_text: str) -> dict[str, Any]:
     """
     질문 분해 응답 파싱
 
@@ -44,7 +43,7 @@ def parse_decomposed_queries(response_text: str) -> Dict[str, Any]:
     Returns:
         분해된 질문 데이터
     """
-    decomposition_data: Dict[str, Any] = {"sub_queries": [], "reasoning": ""}
+    decomposition_data: dict[str, Any] = {"sub_queries": [], "reasoning": ""}
 
     lines = response_text.split("\n")
     current_query = ""
@@ -82,7 +81,7 @@ def parse_decomposed_queries(response_text: str) -> Dict[str, Any]:
 
 async def search_tables(
     index: VectorStoreIndex, query: str, top_k: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     표 검색
 
@@ -124,7 +123,7 @@ async def search_tables(
 
 async def search_text(
     index: VectorStoreIndex, query: str, top_k: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     본문 검색
 
@@ -166,7 +165,7 @@ async def search_text(
 
 async def extract_json_paths(
     index: VectorStoreIndex, query: str, top_k: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     JSON 경로 추출
 
@@ -224,9 +223,9 @@ async def extract_json_paths(
 
 async def integrate_results(
     query: str,
-    table_results: Dict[str, Any] | None,
-    text_results: Dict[str, Any] | None,
-    json_results: Dict[str, Any] | None,
+    table_results: dict[str, Any] | None,
+    text_results: dict[str, Any] | None,
+    json_results: dict[str, Any] | None,
 ) -> str:
     """
     다중 검색 결과 통합
@@ -243,21 +242,21 @@ async def integrate_results(
     if table_results:
         integration_prompt += f"""
 [표 검색 결과]
-{table_results.get('answer', 'N/A')}
+{table_results.get("answer", "N/A")}
 
 """
 
     if text_results:
         integration_prompt += f"""
 [본문 검색 결과]
-{text_results.get('answer', 'N/A')}
+{text_results.get("answer", "N/A")}
 
 """
 
     if json_results:
         integration_prompt += f"""
 [JSON 추출 결과]
-{json_results.get('answer', 'N/A')}
+{json_results.get("answer", "N/A")}
 
 """
 
@@ -277,8 +276,8 @@ async def integrate_results(
 
 async def integrate_all_results(
     original_query: str,
-    sub_queries: List[str],
-    sub_query_results: List[Dict[str, Any]],
+    sub_queries: list[str],
+    sub_query_results: list[dict[str, Any]],
 ) -> str:
     """
     모든 서브 질문 결과를 최종 답변으로 통합
@@ -299,12 +298,12 @@ async def integrate_all_results(
 
 """
 
-    for i, (sub_query, result) in enumerate(zip(sub_queries, sub_query_results), 1):
+    for i, (sub_query, result) in enumerate(zip(sub_queries, sub_query_results, strict=True), 1):
         integration_prompt += f"""
 [서브 질문 {i}]
 질문: {sub_query}
 
-통합 답변: {result.get('integrated_answer', 'N/A')}
+통합 답변: {result.get("integrated_answer", "N/A")}
 
 """
 
@@ -327,7 +326,7 @@ async def integrate_all_results(
 # ============================================================================
 
 
-async def decompose_query_internal(doc_id: str, query: str) -> Dict[str, Any]:
+async def decompose_query_internal(doc_id: str, query: str) -> dict[str, Any]:
     """
     질문 분해 내부 로직
 
@@ -392,7 +391,7 @@ async def multi_retrieval_internal(
     use_text_search: bool = True,
     use_json_extraction: bool = False,
     top_k: int = 5,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     다중 검색 내부 로직
 

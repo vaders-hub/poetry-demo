@@ -1,5 +1,6 @@
 import contextlib
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
@@ -18,7 +19,9 @@ class Base(DeclarativeBase):
 
 
 class DatabaseSessionManager:
-    def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
+    def __init__(self, host: str, engine_kwargs: dict[str, Any] | None = None):
+        if engine_kwargs is None:
+            engine_kwargs = {}
         self._engine = create_async_engine(host, **engine_kwargs)
         self._sessionmaker = async_sessionmaker(
             autocommit=False, bind=self._engine, expire_on_commit=False
@@ -59,7 +62,9 @@ class DatabaseSessionManager:
             await session.close()
 
 
-sessionmanager = DatabaseSessionManager(setting.database_url, {"echo": setting.echo_sql})
+sessionmanager = DatabaseSessionManager(
+    setting.database_url, {"echo": setting.echo_sql}
+)
 
 
 async def connect():

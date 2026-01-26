@@ -4,27 +4,27 @@
 PDF 문서를 LlamaIndex로 인덱싱하고 실무 질문에 답변하는 FastAPI 엔드포인트
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import StreamingResponse
 import os
 from datetime import datetime
 
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+
 from app.models import (
     DocumentUploadRequest,
+    IssueExtractionRequest,
     QueryRequest,
     SummaryRequest,
-    IssueExtractionRequest,
 )
 from app.utils import (
-    load_pdf_from_path,
+    compute_confidence_score,
     create_hierarchical_index,
-    stream_response,
-    success_response,
     created_response,
     error_response,
-    compute_confidence_score,
+    load_pdf_from_path,
+    stream_response,
+    success_response,
 )
-
 
 router = APIRouter(prefix="/document-analysis", tags=["Document Analysis"])
 
@@ -185,7 +185,7 @@ async def get_document_summary_streaming(request: SummaryRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/extract-issues")

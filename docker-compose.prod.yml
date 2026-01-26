@@ -1,0 +1,45 @@
+# Docker Compose - 프로덕션 오버라이드 설정
+# 사용법: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  app:
+    # 프로덕션에서는 로컬 볼륨 마운트 제거
+    volumes: []
+    # 프로덕션 환경 설정
+    environment:
+      - LOG_LEVEL=INFO
+      - PYTHONOPTIMIZE=2
+    # 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    # 자동 재시작 정책
+    restart: always
+    # 로그 설정
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    # 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

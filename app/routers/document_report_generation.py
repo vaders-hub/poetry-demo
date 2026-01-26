@@ -11,20 +11,19 @@ from datetime import datetime
 from fastapi import APIRouter
 
 from app.models.document_analysis import (
-    ReportSummaryRequest,
-    ChecklistRequest,
     AmbiguousTextRequest,
+    ChecklistRequest,
     FAQGenerationRequest,
+    ReportSummaryRequest,
 )
 from app.utils import (
-    success_response,
-    error_response,
-    ping_redis,
-    load_index_from_redis,
-    generate_structured_query,
     compute_confidence_score,
+    error_response,
+    generate_structured_query,
+    load_index_from_redis,
+    ping_redis,
+    success_response,
 )
-
 
 router = APIRouter(
     prefix="/document-report-generation",

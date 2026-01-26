@@ -1,0 +1,59 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+env
+.mypy_cache
+.ruff_cache
+.pytest_cache
+*.egg-info
+dist
+build
+*.egg
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Testing
+tests
+pytest.ini
+.coverage
+htmlcov
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker
+
+# Other
+.pre-commit-config.yaml
+pyrightconfig.json
+*.bak
+*.log
+*.tmp
+
+# Agent/Claude
+.claude
+.agent

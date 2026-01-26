@@ -1,7 +1,5 @@
-from typing import Optional
-
-from fastapi import Depends, File, Form, UploadFile
-from pydantic import BaseModel, ConfigDict
+from fastapi import Form
+from pydantic import BaseModel
 
 
 class UserCreate(BaseModel):
@@ -11,6 +9,7 @@ class UserCreate(BaseModel):
 
 def user_info_form(username: str = Form(...), password: str = Form(...)) -> UserCreate:
     return UserCreate(username=username, password=password)
+
 
 class UserResult(BaseModel):
     id: int

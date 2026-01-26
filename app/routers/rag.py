@@ -1,45 +1,44 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+import traceback
 from datetime import datetime
 
 import bs4
-import traceback
-
-from langchain import hub
+from fastapi import APIRouter
 from langchain_community.document_loaders import WebBaseLoader
-from langchain_text_splitters import HTMLHeaderTextSplitter, RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
-
-from typing import List
+from langchain_text_splitters import (
+    HTMLHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
+)
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
-from app.utils import success_response, error_response
-from app.main import chain
 from app.main import get_vector_store
+from app.utils import error_response, success_response
 
 
 class URLInput(BaseModel):
     url: str
+
 
 router = APIRouter(prefix="/rag", tags=["rag"])
 
 # Lazy-loaded embeddings model
 _embeddings_model = None
 
+
 def get_embeddings_model():
     """Get or create HuggingFace embeddings model (lazy initialization)"""
     global _embeddings_model
     if _embeddings_model is None:
         _embeddings_model = HuggingFaceEmbeddings(
-            model_name='jhgan/ko-sroberta-nli',
-            model_kwargs={'device':'cpu'},
-            encode_kwargs={'normalize_embeddings':True},
+            model_name="jhgan/ko-sroberta-nli",
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
         )
     return _embeddings_model
+
 
 @router.post("/load")
 async def process_url(url_input: URLInput):
@@ -57,10 +56,10 @@ async def process_url(url_input: URLInput):
         ]
         html_splitter = HTMLHeaderTextSplitter(headers_to_split_on)
         html_header_splits = html_splitter.split_text_from_url(docs[0])
-        html_header_splits_elements = html_splitter.split_text(docs[0])
+        html_splitter.split_text(docs[0])
 
         for element in html_header_splits[:2]:
-            print('html_header_splits ::::::::::::::::::::::::::: ', element)
+            print("html_header_splits ::::::::::::::::::::::::::: ", element)
 
         chunk_size = 500
         chunk_overlap = 30
@@ -100,34 +99,38 @@ async def process_url(url_input: URLInput):
             status_code=500,
         )
 
+
 class State(TypedDict):
     question: str
-    context: List[Document]
+    context: list[Document]
     answer: str
+
 
 @router.post("/web-retrieve")
 async def web_retrieve(url_input: URLInput):
     """웹 문서 검색 및 유사도 검색"""
-    state: State = State()
+    State()
     try:
         start_time = datetime.now()
 
         loader = WebBaseLoader(
             web_paths=(url_input.url,),
-            bs_kwargs=dict(
-                parse_only=bs4.SoupStrainer(
+            bs_kwargs={
+                "parse_only": bs4.SoupStrainer(
                     class_=("post-content", "post-title", "post-header")
                 )
-            ),
+            },
         )
         docs = loader.load()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000, chunk_overlap=200
+        )
         all_splits = text_splitter.split_documents(docs)
 
         vs = get_vector_store()
         _ = vs.add_documents(documents=all_splits)
 
-        retrieved_docs = vs.similarity_search('Class')
+        retrieved_docs = vs.similarity_search("Class")
 
         end_time = datetime.now()
 
@@ -136,7 +139,9 @@ async def web_retrieve(url_input: URLInput):
                 "url": url_input.url,
                 "documents": [
                     {
-                        "page_content": doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content,
+                        "page_content": doc.page_content[:200] + "..."
+                        if len(doc.page_content) > 200
+                        else doc.page_content,
                         "metadata": doc.metadata,
                     }
                     for doc in retrieved_docs
@@ -147,7 +152,7 @@ async def web_retrieve(url_input: URLInput):
             metadata={
                 "total_splits": len(all_splits),
                 "retrieved_count": len(retrieved_docs),
-            }
+            },
         )
 
     except Exception as e:

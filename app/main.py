@@ -1,32 +1,35 @@
-import sys
 import logging
+import sys
 import warnings
 
 # Suppress Pydantic internal warnings from dependencies
-warnings.filterwarnings("ignore", category=UserWarning, module="pydantic._internal._generate_schema")
+warnings.filterwarnings(
+    "ignore", category=UserWarning, module="pydantic._internal._generate_schema"
+)
 
-import uvicorn
-from uvicorn.config import LOGGING_CONFIG
+import faiss  # noqa: E402
+import uvicorn  # noqa: E402
+from langchain.prompts import PromptTemplate  # noqa: E402
+from langchain_community.docstore.in_memory import InMemoryDocstore  # noqa: E402
+from langchain_community.vectorstores import FAISS  # noqa: E402
+from langchain_core.output_parsers import StrOutputParser  # noqa: E402
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings  # noqa: E402
+from openai import OpenAI  # noqa: E402
+from uvicorn.config import LOGGING_CONFIG  # noqa: E402
 
-from openai import OpenAI
-
-import faiss
-
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_community.docstore.in_memory import InMemoryDocstore
-from langchain_community.vectorstores import FAISS
-
-from app.config import setting
+from app.config import setting  # noqa: E402
 
 log_config = uvicorn.config.LOGGING_CONFIG
-LOGGING_CONFIG["formatters"]["access"]["fmt"] = "%(asctime)s - Uvicorn.Access - %(levelname)s - %(message)s"
-LOGGING_CONFIG["formatters"]["default"]["fmt"] = "%(asctime)s - Uvicorn.Default - %(levelname)s - %(message)s"
+LOGGING_CONFIG["formatters"]["access"]["fmt"] = (
+    "%(asctime)s - Uvicorn.Access - %(levelname)s - %(message)s"
+)
+LOGGING_CONFIG["formatters"]["default"]["fmt"] = (
+    "%(asctime)s - Uvicorn.Default - %(levelname)s - %(message)s"
+)
 
 logging.basicConfig(
     stream=sys.stdout,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.DEBUG if setting.log_level == "DEBUG" else logging.INFO,
     # handlers=[logging.StreamHandler()]
 )
@@ -51,10 +54,7 @@ def get_llm():
     """Get or create ChatOpenAI instance."""
     global llm
     if llm is None:
-        llm = ChatOpenAI(
-            temperature=setting.temperature,
-            model_name=setting.model_name
-        )
+        llm = ChatOpenAI(temperature=setting.temperature, model_name=setting.model_name)
     return llm
 
 
@@ -97,10 +97,7 @@ def get_vector_store():
 
 # Initialize client and llm eagerly (they don't make API calls)
 client = OpenAI()
-llm = ChatOpenAI(
-    temperature=setting.temperature,
-    model_name=setting.model_name
-)
+llm = ChatOpenAI(temperature=setting.temperature, model_name=setting.model_name)
 
 template = "아래 질문에 대한 답변을 해주세요. \n{query}"
 prompt = PromptTemplate.from_template(template=template)
@@ -113,9 +110,16 @@ vector_store = None
 
 def start():
     try:
-        uvicorn.run("app.router:app", host="0.0.0.0", port=8001, reload=True, log_config=LOGGING_CONFIG)
+        uvicorn.run(
+            "app.router:app",
+            host="0.0.0.0",
+            port=8001,
+            reload=True,
+            log_config=LOGGING_CONFIG,
+        )
     except uvicorn.Error as error:
         logging.critical(f"An unhandled uvicorn error occurred: {error}")
+
 
 if __name__ == "__main__":
     start()

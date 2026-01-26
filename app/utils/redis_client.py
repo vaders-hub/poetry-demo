@@ -5,12 +5,11 @@ Redis 연결을 싱글톤 패턴으로 관리하여 여러 라우터에서 재�
 """
 
 import os
-from typing import Optional
+
 import redis.asyncio as redis
 
-
 # Redis 클라이언트 (전역 싱글톤)
-_redis_client: Optional[redis.Redis] = None
+_redis_client: redis.Redis | None = None
 
 
 async def get_redis_client() -> redis.Redis:

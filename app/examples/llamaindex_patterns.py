@@ -6,30 +6,28 @@ FastAPI 없이 순수 LlamaIndex 기능을 학습할 수 있습니다.
 """
 
 import asyncio
-import json
 from datetime import datetime
-from typing import List, Dict, Any
-import pandas as pd
 from io import StringIO
+from typing import Any
 
+import pandas as pd
 from llama_index.core import (
     Document,
-    VectorStoreIndex,
-    SummaryIndex,
     KeywordTableIndex,
     Settings,
+    SummaryIndex,
+    VectorStoreIndex,
 )
 from llama_index.core.node_parser import (
     HierarchicalNodeParser,
     SentenceSplitter,
 )
-from llama_index.core.schema import TextNode, NodeRelationship, RelatedNodeInfo
 from llama_index.core.query_engine import RouterQueryEngine
+from llama_index.core.schema import NodeRelationship, RelatedNodeInfo, TextNode
 from llama_index.core.selectors import LLMSingleSelector
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 
 from app.configs.llama_index import init_llama_index_settings
-
 
 # LlamaIndex 전역 설정 초기화
 init_llama_index_settings()
@@ -202,7 +200,7 @@ async def pattern_3_json_indexing():
     }
 
     # JSON을 계층적 텍스트로 변환
-    def json_to_hierarchical_text(data: Any, prefix: str = "") -> List[str]:
+    def json_to_hierarchical_text(data: Any, prefix: str = "") -> list[str]:
         texts = []
         if isinstance(data, dict):
             for key, value in data.items():
@@ -460,7 +458,7 @@ async def pattern_6_custom_hierarchical_nodes():
 
         all_nodes.extend([parent_node] + child_nodes)
 
-    print(f"✓ Created custom hierarchy:")
+    print("✓ Created custom hierarchy:")
     print(f"  - {len(sections)} parent nodes")
     print(
         f"  - {len([n for n in all_nodes if n.metadata.get('type') == 'child'])} child nodes"
@@ -527,7 +525,7 @@ async def pattern_7_metadata_filtering():
     print(f"Response: {response}")
 
     # 메타데이터 필터 쿼리
-    from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
+    from llama_index.core.vector_stores import ExactMatchFilter, MetadataFilters
 
     filtered_query_engine = index.as_query_engine(
         filters=MetadataFilters(filters=[ExactMatchFilter(key="category", value="ai")])
@@ -561,7 +559,7 @@ async def main():
         ("Metadata Filtering", pattern_7_metadata_filtering),
     ]
 
-    for i, (name, pattern_func) in enumerate(patterns, 1):
+    for _, (name, pattern_func) in enumerate(patterns, 1):
         try:
             await pattern_func()
         except Exception as e:

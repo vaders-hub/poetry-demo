@@ -1,0 +1,68 @@
+# Docker Compose 설정
+# 사용법:
+#   개발 환경: docker compose up --build
+#   프로덕션:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: poetry-demo-api
+    ports:
+      - "8001:8001"
+    environment:
+      # 필수 환경 변수 (.env 파일에서 로드됨)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MODEL_NAME=${MODEL_NAME:-gpt-4o-mini}
+      - TEMPERATURE=${TEMPERATURE:-0.7}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # Redis 연결 (선택적)
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      # Oracle DB 연결 (선택적)
+      - ORACLE_DSN=${ORACLE_DSN:-}
+      - ORACLE_USER=${ORACLE_USER:-}
+      - ORACLE_PASSWORD=${ORACLE_PASSWORD:-}
+    env_file:
+      - .env
+    volumes:
+      # 개발 시 코드 변경 반영 (프로덕션에서는 제거)
+      - ./app:/app/app:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - poetry-demo-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: poetry-demo-redis
+    ports:
+      - "6380:6379"  # 호스트 포트 6380 -> 컨테이너 포트 6379
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - poetry-demo-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  poetry-demo-network:
+    driver: bridge
+
+volumes:
+  redis-data:

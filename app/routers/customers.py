@@ -1,16 +1,11 @@
 from fastapi import APIRouter, HTTPException
 
+from app.crud.customer import create_customer, get_customer, get_customers
+from app.crud.customer import delete_customer as delete_customer_crud
+from app.crud.customer import update_customer as update_customer_crud
 from app.dependencies.core import DBSessionDep
-from app.crud.customer import (
-    get_customer,
-    get_customers,
-    create_customer,
-    update_customer as update_customer_crud,
-    delete_customer as delete_customer_crud
-)
 from app.schemas.customer import Customer, CustomerResponseData
 from app.utils.response_wrapper import api_response
-
 
 router = APIRouter(
     prefix="/customer",
@@ -18,10 +13,8 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get(
-    "/list",
-    response_model=CustomerResponseData
-)
+
+@router.get("/list", response_model=CustomerResponseData)
 async def customer_list(
     db_session: DBSessionDep,
 ):
@@ -29,9 +22,9 @@ async def customer_list(
         customers = await get_customers(db_session)
         return api_response(data=customers, message="customer retrieved")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get(
@@ -45,6 +38,7 @@ async def customer_single(
     customer = await get_customer(db_session, customer_id)
     return api_response(data=customer, message="customer retrieved")
 
+
 @router.post(
     "/add",
     response_model=CustomerResponseData,
@@ -56,6 +50,7 @@ async def add_customer(
     customer = await create_customer(db_session, customer)
     return api_response(data=customer, message="customer created")
 
+
 @router.put(
     "/modify",
     response_model=CustomerResponseData,
@@ -66,6 +61,7 @@ async def update_customer(
 ):
     customer = await update_customer_crud(db_session, customer)
     return api_response(data=customer, message="customer modified")
+
 
 @router.delete(
     "/delete",

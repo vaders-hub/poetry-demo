@@ -4,21 +4,24 @@ LCEL (LangChain Expression Language) Examples Router
 이 모듈은 LangChain의 선언적 문법(LCEL)과 FastAPI의 비동기 처리를 학습하기 위한 예제들을 제공합니다.
 """
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
-from typing import List, Optional
 import asyncio
 from datetime import datetime
 
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+from langchain_core.output_parsers import (
+    JsonOutputParser,
+    PydanticOutputParser,
+    StrOutputParser,
+)
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser, JsonOutputParser, PydanticOutputParser
 from langchain_core.runnables import (
-    RunnablePassthrough,
     RunnableLambda,
     RunnableParallel,
+    RunnablePassthrough,
 )
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/lcel", tags=["LCEL Examples"])
 
@@ -338,7 +341,7 @@ async def conditional_chain(request: SimpleQuery):
 
 
 class BatchRequest(BaseModel):
-    queries: List[str]
+    queries: list[str]
 
 
 @router.post("/batch-chain")
@@ -361,7 +364,7 @@ async def batch_chain(request: BatchRequest):
 
     return {
         "results": [
-            {"query": q, "answer": r} for q, r in zip(request.queries, results)
+            {"query": q, "answer": r} for q, r in zip(request.queries, results, strict=True)
         ],
         "total_queries": len(request.queries),
         "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
@@ -502,39 +505,43 @@ async def complex_chain(request: ComplexRequest):
 # Pydantic 모델 정의
 class Person(BaseModel):
     """사람 정보를 나타내는 구조화된 모델"""
+
     name: str = Field(description="사람의 이름")
-    age: Optional[int] = Field(default=None, description="사람의 나이")
-    occupation: Optional[str] = Field(default=None, description="직업")
-    email: Optional[str] = Field(default=None, description="이메일 주소")
+    age: int | None = Field(default=None, description="사람의 나이")
+    occupation: str | None = Field(default=None, description="직업")
+    email: str | None = Field(default=None, description="이메일 주소")
 
 
 class MovieReview(BaseModel):
     """영화 리뷰를 나타내는 구조화된 모델"""
+
     title: str = Field(description="영화 제목")
     rating: int = Field(description="평점 (1-10)", ge=1, le=10)
     summary: str = Field(description="리뷰 요약 (1-2 문장)")
-    pros: List[str] = Field(description="장점 목록")
-    cons: List[str] = Field(description="단점 목록")
+    pros: list[str] = Field(description="장점 목록")
+    cons: list[str] = Field(description="단점 목록")
     recommended: bool = Field(description="추천 여부")
 
 
 class ProductAnalysis(BaseModel):
     """제품 분석 결과를 나타내는 구조화된 모델"""
+
     product_name: str = Field(description="제품명")
     category: str = Field(description="제품 카테고리")
-    target_audience: List[str] = Field(description="타겟 고객층")
-    key_features: List[str] = Field(description="주요 기능")
+    target_audience: list[str] = Field(description="타겟 고객층")
+    key_features: list[str] = Field(description="주요 기능")
     price_range: str = Field(description="가격대")
     market_position: str = Field(description="시장 포지션")
 
 
 class CodeAnalysis(BaseModel):
     """코드 분석 결과를 나타내는 구조화된 모델"""
+
     language: str = Field(description="프로그래밍 언어")
     complexity: str = Field(description="복잡도 (low/medium/high)")
     purpose: str = Field(description="코드의 목적")
-    improvements: List[str] = Field(description="개선 제안 사항")
-    security_issues: List[str] = Field(description="보안 이슈")
+    improvements: list[str] = Field(description="개선 제안 사항")
+    security_issues: list[str] = Field(description="보안 이슈")
     estimated_lines: int = Field(description="예상 코드 줄 수")
 
 
@@ -583,7 +590,7 @@ async def extract_person_info(request: PersonExtractionRequest):
     chain = (
         {
             "text": RunnablePassthrough(),
-            "format_instructions": lambda _: parser.get_format_instructions()
+            "format_instructions": lambda _: parser.get_format_instructions(),
         }
         | prompt
         | llm
@@ -591,9 +598,9 @@ async def extract_person_info(request: PersonExtractionRequest):
     )
 
     # 실행
-    start_time = datetime.now()
+    datetime.now()
     result = await chain.ainvoke(request.text)
-    end_time = datetime.now()
+    datetime.now()
 
     # Pydantic 모델이 반환되므로 FastAPI가 자동으로 직렬화
     return result
@@ -623,7 +630,7 @@ async def generate_movie_review(request: MovieReviewRequest):
     chain = (
         {
             "movie_description": RunnablePassthrough(),
-            "format_instructions": lambda _: parser.get_format_instructions()
+            "format_instructions": lambda _: parser.get_format_instructions(),
         }
         | prompt
         | llm
@@ -664,7 +671,7 @@ async def analyze_product_structured(request: ProductAnalysisRequest):
         "result": result.dict(),
         "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
         "method": "with_structured_output",
-        "explanation": "Uses OpenAI function calling for more reliable structured output"
+        "explanation": "Uses OpenAI function calling for more reliable structured output",
     }
 
 
@@ -682,9 +689,7 @@ async def parallel_structured_analysis(request: ProductAnalysisRequest):
     """
     # 제품 분석
     product_llm = llm.with_structured_output(ProductAnalysis)
-    product_prompt = ChatPromptTemplate.from_template(
-        "Analyze this product: {text}"
-    )
+    product_prompt = ChatPromptTemplate.from_template("Analyze this product: {text}")
     product_chain = product_prompt | product_llm
 
     # 사람 정보 추출 (제품 설명에서 언급된 사람)
@@ -698,7 +703,7 @@ async def parallel_structured_analysis(request: ProductAnalysisRequest):
     person_chain = (
         {
             "text": RunnablePassthrough(),
-            "format_instructions": lambda _: person_parser.get_format_instructions()
+            "format_instructions": lambda _: person_parser.get_format_instructions(),
         }
         | person_prompt
         | llm
@@ -706,10 +711,9 @@ async def parallel_structured_analysis(request: ProductAnalysisRequest):
     )
 
     # 병렬 실행
-    parallel_chain = RunnableParallel({
-        "product_analysis": product_chain,
-        "person_info": person_chain
-    })
+    parallel_chain = RunnableParallel(
+        {"product_analysis": product_chain, "person_info": person_chain}
+    )
 
     start_time = datetime.now()
     result = await parallel_chain.ainvoke({"text": request.product_description})
@@ -719,7 +723,7 @@ async def parallel_structured_analysis(request: ProductAnalysisRequest):
         "product_analysis": result["product_analysis"].dict(),
         "person_info": result["person_info"].dict(),
         "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-        "explanation": "Two different Pydantic models generated in parallel"
+        "explanation": "Two different Pydantic models generated in parallel",
     }
 
 
@@ -730,7 +734,8 @@ async def parallel_structured_analysis(request: ProductAnalysisRequest):
 
 class PersonList(BaseModel):
     """여러 사람의 정보를 담는 리스트"""
-    people: List[Person] = Field(description="사람들의 목록")
+
+    people: list[Person] = Field(description="사람들의 목록")
     total_count: int = Field(description="총 인원 수")
 
 
@@ -761,7 +766,7 @@ async def extract_team_members(request: TeamAnalysisRequest):
     return {
         "result": result.dict(),
         "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-        "explanation": "Extracted multiple Person objects into a list"
+        "explanation": "Extracted multiple Person objects into a list",
     }
 
 
@@ -791,16 +796,13 @@ async def code_analysis_with_postprocessing(request: CodeAnalysisRequest):
             "analysis": analysis.dict(),
             "risk_level": "high" if len(analysis.security_issues) > 2 else "low",
             "development_time_estimate": f"{analysis.estimated_lines // 10} hours",
-            "requires_review": analysis.complexity == "high" or len(analysis.security_issues) > 0,
-            "timestamp": datetime.now().isoformat()
+            "requires_review": analysis.complexity == "high"
+            or len(analysis.security_issues) > 0,
+            "timestamp": datetime.now().isoformat(),
         }
 
     # 체인 구성
-    chain = (
-        prompt
-        | structured_llm
-        | RunnableLambda(enrich_analysis)
-    )
+    chain = prompt | structured_llm | RunnableLambda(enrich_analysis)
 
     start_time = datetime.now()
     result = await chain.ainvoke({"code_description": request.code_description})
@@ -818,7 +820,7 @@ async def code_analysis_with_postprocessing(request: CodeAnalysisRequest):
 
 
 class BatchPersonExtractionRequest(BaseModel):
-    texts: List[str] = Field(description="사람 정보가 포함된 텍스트 목록")
+    texts: list[str] = Field(description="사람 정보가 포함된 텍스트 목록")
 
 
 @router.post("/pydantic-batch")
@@ -830,9 +832,7 @@ async def batch_person_extraction(request: BatchPersonExtractionRequest):
     """
     structured_llm = llm.with_structured_output(Person)
 
-    prompt = ChatPromptTemplate.from_template(
-        "Extract person information from: {text}"
-    )
+    prompt = ChatPromptTemplate.from_template("Extract person information from: {text}")
 
     chain = prompt | structured_llm
 
@@ -848,7 +848,7 @@ async def batch_person_extraction(request: BatchPersonExtractionRequest):
         "results": [person.dict() for person in results],
         "total_processed": len(results),
         "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-        "explanation": "Batch processing with Pydantic structured output"
+        "explanation": "Batch processing with Pydantic structured output",
     }
 
 
@@ -859,17 +859,19 @@ async def batch_person_extraction(request: BatchPersonExtractionRequest):
 
 class SimpleAnalysis(BaseModel):
     """간단한 분석 결과"""
+
     summary: str = Field(description="간단한 요약")
     category: str = Field(description="카테고리")
 
 
 class DetailedAnalysis(BaseModel):
     """상세한 분석 결과"""
+
     summary: str = Field(description="상세한 요약")
     category: str = Field(description="카테고리")
-    subcategories: List[str] = Field(description="하위 카테고리")
-    key_points: List[str] = Field(description="주요 포인트")
-    recommendations: List[str] = Field(description="추천 사항")
+    subcategories: list[str] = Field(description="하위 카테고리")
+    key_points: list[str] = Field(description="주요 포인트")
+    recommendations: list[str] = Field(description="추천 사항")
 
 
 class ConditionalAnalysisRequest(BaseModel):
@@ -905,5 +907,5 @@ async def conditional_structured_output(request: ConditionalAnalysisRequest):
         "result": result.dict(),
         "model_used": "DetailedAnalysis" if request.detailed else "SimpleAnalysis",
         "execution_time_ms": (end_time - start_time).total_seconds() * 1000,
-        "explanation": "Different Pydantic models based on condition"
+        "explanation": "Different Pydantic models based on condition",
     }

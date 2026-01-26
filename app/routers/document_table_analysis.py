@@ -11,17 +11,16 @@ from datetime import datetime
 from fastapi import APIRouter
 
 from app.models.document_analysis import (
-    TableImportanceRequest,
     TableComparisonRequest,
+    TableImportanceRequest,
 )
 from app.utils import (
-    success_response,
-    error_response,
-    ping_redis,
-    load_index_from_redis,
     compute_confidence_score,
+    error_response,
+    load_index_from_redis,
+    ping_redis,
+    success_response,
 )
-
 
 router = APIRouter(
     prefix="/document-table-analysis", tags=["Document Table Analysis (Redis)"]

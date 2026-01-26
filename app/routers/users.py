@@ -1,15 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.crud.user import create_user, get_user_by_username
 from app.dependencies.core import DBSessionDep
-from app.schemas.user import Token, UserCreate, user_info_form, UserResult
-from app.utils import security
+from app.schemas.user import Token, UserCreate, UserResult, user_info_form
 from app.utils import (
-    api_response,
-    success_response,
     created_response,
     error_response,
+    security,
+    success_response,
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -52,7 +51,6 @@ async def register(
         )
 
 
-
 @router.post("/login", response_model=Token)
 async def login(
     db_session: DBSessionDep,
@@ -61,7 +59,9 @@ async def login(
     try:
         user = await get_user_by_username(db_session, form_data.username)
 
-        if not user or not security.verify_password(form_data.password, user.hashed_password):
+        if not user or not security.verify_password(
+            form_data.password, user.hashed_password
+        ):
             return error_response(
                 message="잘못된 사용자명 또는 비밀번호입니다.",
                 error="INVALID_CREDENTIALS",

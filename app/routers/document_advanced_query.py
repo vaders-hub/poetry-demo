@@ -16,12 +16,12 @@ from fastapi import APIRouter
 
 from app.models.document_analysis import AdvancedQueryRequest
 from app.utils import (
-    success_response,
-    error_response,
-    ping_redis,
     decompose_query_internal,
-    multi_retrieval_internal,
+    error_response,
     integrate_all_results,
+    multi_retrieval_internal,
+    ping_redis,
+    success_response,
 )
 
 router = APIRouter(

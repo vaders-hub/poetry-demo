@@ -3,15 +3,15 @@ FastAPI 비동기 처리 패턴 학습 예제
 
 이 모듈은 FastAPI와 Python의 asyncio를 활용한 다양한 비동기 처리 패턴을 보여줍니다.
 """
+
 import asyncio
 import time
-from typing import List, Dict, Any
 from datetime import datetime
-
 
 # ============================================================================
 # Example 1: 기본 async/await
 # ============================================================================
+
 
 async def fetch_data(id: int, delay: float = 1.0) -> dict:
     """
@@ -44,6 +44,7 @@ async def basic_async_example():
 # Example 2: asyncio.gather를 사용한 병렬 실행
 # ============================================================================
 
+
 async def parallel_gather_example():
     """
     asyncio.gather를 사용한 병렬 실행
@@ -54,11 +55,7 @@ async def parallel_gather_example():
     start = time.time()
 
     # 병렬 실행 (총 1초 소요)
-    results = await asyncio.gather(
-        fetch_data(1),
-        fetch_data(2),
-        fetch_data(3)
-    )
+    results = await asyncio.gather(fetch_data(1), fetch_data(2), fetch_data(3))
 
     elapsed = time.time() - start
     print(f"Parallel execution with gather took: {elapsed:.2f}s")
@@ -68,6 +65,7 @@ async def parallel_gather_example():
 # ============================================================================
 # Example 3: asyncio.create_task를 사용한 태스크 생성
 # ============================================================================
+
 
 async def task_creation_example():
     """
@@ -98,6 +96,7 @@ async def task_creation_example():
 # ============================================================================
 # Example 4: asyncio.wait와 타임아웃
 # ============================================================================
+
 
 async def wait_with_timeout_example():
     """
@@ -133,6 +132,7 @@ async def wait_with_timeout_example():
 # Example 5: asyncio.wait_for - 단일 작업 타임아웃
 # ============================================================================
 
+
 async def wait_for_example():
     """
     asyncio.wait_for - 단일 작업에 타임아웃 설정
@@ -141,10 +141,7 @@ async def wait_for_example():
 
     try:
         # 0.5초 타임아웃 (작업은 1초 소요)
-        result = await asyncio.wait_for(
-            fetch_data(1, delay=1.0),
-            timeout=0.5
-        )
+        result = await asyncio.wait_for(fetch_data(1, delay=1.0), timeout=0.5)
         return result
     except asyncio.TimeoutError:
         print("Operation timed out!")
@@ -154,6 +151,7 @@ async def wait_for_example():
 # ============================================================================
 # Example 6: 에러 처리와 gather의 return_exceptions
 # ============================================================================
+
 
 async def fetch_with_error(id: int, should_fail: bool = False):
     """에러가 발생할 수 있는 fetch"""
@@ -176,7 +174,7 @@ async def error_handling_example():
         fetch_with_error(1, should_fail=False),
         fetch_with_error(2, should_fail=True),
         fetch_with_error(3, should_fail=False),
-        return_exceptions=True
+        return_exceptions=True,
     )
 
     # 결과 처리
@@ -200,7 +198,9 @@ semaphore = asyncio.Semaphore(2)
 async def fetch_with_limit(id: int):
     """세마포어를 사용하여 동시 실행 수 제한"""
     async with semaphore:
-        print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] Starting {id} (max 2 concurrent)")
+        print(
+            f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] Starting {id} (max 2 concurrent)"
+        )
         await asyncio.sleep(1)
         print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] Finished {id}")
         return {"id": id}
@@ -232,6 +232,7 @@ async def semaphore_example():
 # ============================================================================
 # Example 8: 비동기 컨텍스트 매니저
 # ============================================================================
+
 
 class AsyncResource:
     """비동기 리소스 예제 (DB 연결 등을 시뮬레이션)"""
@@ -274,6 +275,7 @@ async def async_context_manager_example():
 # Example 9: 비동기 제너레이터 (async for)
 # ============================================================================
 
+
 async def async_data_generator(count: int):
     """
     비동기 제너레이터
@@ -304,6 +306,7 @@ async def async_generator_example():
 # ============================================================================
 # Example 10: 비동기와 동기 코드 혼합
 # ============================================================================
+
 
 def sync_heavy_computation(n: int) -> int:
     """CPU 집약적 동기 작업"""
@@ -339,6 +342,7 @@ async def run_sync_in_executor_example():
 # ============================================================================
 # 메인 실행 함수
 # ============================================================================
+
 
 async def run_all_examples():
     """모든 예제 실행"""

@@ -18,9 +18,9 @@ Usage:
 
 import os
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any
 
-from app.utils.document_analysis import load_pdf_from_path, create_hierarchical_index
+from app.utils.document_analysis import create_hierarchical_index, load_pdf_from_path
 from app.utils.redis_index import save_index_to_redis
 
 
@@ -32,8 +32,8 @@ class DocumentUploadResult:
         success: bool,
         doc_id: str,
         file_name: str,
-        data: Optional[Dict[str, Any]] = None,
-        error_message: Optional[str] = None,
+        data: dict[str, Any] | None = None,
+        error_message: str | None = None,
         error_code: int = 0,
     ):
         self.success = success
@@ -53,7 +53,7 @@ async def upload_and_index_document(
     child_chunk_size: int = 256,
     parent_chunk_overlap: int = 100,
     child_chunk_overlap: int = 50,
-    extra_metadata: Optional[Dict[str, Any]] = None,
+    extra_metadata: dict[str, Any] | None = None,
 ) -> DocumentUploadResult:
     """
     문서 업로드 및 Redis 인덱싱 공통 로직
@@ -190,7 +190,7 @@ CHUNK_CONFIGS = {
 }
 
 
-def get_chunk_config(analysis_type: str) -> Dict[str, int]:
+def get_chunk_config(analysis_type: str) -> dict[str, int]:
     """
     분석 유형에 맞는 청크 설정 반환
 

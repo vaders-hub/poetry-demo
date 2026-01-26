@@ -12,24 +12,23 @@ from datetime import datetime
 from fastapi import APIRouter
 
 from app.models.document_analysis import (
-    ReasonAnalysisRequest,
-    ExceptionClauseRequest,
     ClauseSearchRequest,
+    ExceptionClauseRequest,
+    ReasonAnalysisRequest,
 )
 from app.utils import (
-    success_response,
     error_response,
-    ping_redis,
     load_index_from_redis,
+    ping_redis,
+    success_response,
 )
 from app.utils.document_analysis import (
+    compute_confidence_score,
     extract_source_references,
     format_citation,
     get_exception_keywords,
     highlight_exception_sources,
-    compute_confidence_score,
 )
-
 
 router = APIRouter(
     prefix="/document-clause-analysis", tags=["Document Clause Analysis (Redis)"]

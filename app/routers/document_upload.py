@@ -12,16 +12,15 @@ from fastapi import APIRouter, HTTPException
 
 from app.models import DocumentUploadRequest
 from app.utils import (
-    success_response,
-    created_response,
-    error_response,
-    ping_redis,
     check_document_exists,
+    created_response,
     delete_document_from_redis,
+    error_response,
     list_all_documents,
+    ping_redis,
+    success_response,
     upload_and_index_document,
 )
-
 
 router = APIRouter(
     prefix="/documents",

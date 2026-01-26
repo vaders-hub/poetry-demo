@@ -7,6 +7,8 @@ __pycache__
 .project
 .claude
 dist
+.mypy_cache
+.venv
 
 # Claude temporary directories
 tmpclaude-*

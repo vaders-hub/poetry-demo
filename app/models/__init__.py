@@ -12,17 +12,17 @@ class Base(DeclarativeBase):
 
 
 # SQLAlchemy DB Models
-from app.models.customer import Customer
-from app.models.user import User
+from app.models.customer import Customer  # noqa: E402
 
 # Pydantic Request/Response Models
-from app.models.document_analysis import (
+from app.models.document_analysis import (  # noqa: E402
     ChunkConfig,
     DocumentUploadRequest,
+    IssueExtractionRequest,
     QueryRequest,
     SummaryRequest,
-    IssueExtractionRequest,
 )
+from app.models.user import User  # noqa: E402
 
 __all__ = [
     # Base
